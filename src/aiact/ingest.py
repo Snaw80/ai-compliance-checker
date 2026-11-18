@@ -1,8 +1,9 @@
 """Build the corpus: parse every source, write data/corpus/chunks.jsonl, load Postgres.
 
     uv run python -m aiact.sources        # download (cached)
-    uv run python -m aiact.ingest         # parse + load
-    uv run python -m aiact.ingest --no-db # parse only
+    uv run python -m aiact.ingest            # parse + load + embed (needs `ollama pull bge-m3`)
+    uv run python -m aiact.ingest --no-embed # parse + load
+    uv run python -m aiact.ingest --no-db    # parse only
 """
 
 from __future__ import annotations
@@ -62,7 +63,7 @@ def load_db(chunks: list[Chunk]) -> None:
     url = os.environ.get("DATABASE_URL", "postgresql://aiact:aiact@localhost:5433/aiact")
     used_docs = {c.doc_id for c in chunks}
     with psycopg.connect(url) as conn, conn.cursor() as cur:
-        # Full refresh of the corpus in one transaction (embeddings are recomputed on day 2).
+        # Full refresh of the corpus in one transaction; embeddings are re-filled from the cache.
         cur.execute("delete from documents")
         for doc_id in used_docs:
             d = asdict(SOURCES[doc_id].doc)
@@ -85,6 +86,7 @@ def load_db(chunks: list[Chunk]) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-db", action="store_true")
+    ap.add_argument("--no-embed", action="store_true")
     a = ap.parse_args()
     chunks = build()
     write_jsonl(chunks)
@@ -94,6 +96,9 @@ def main() -> None:
     if not a.no_db:
         load_db(chunks)
         print("loaded into Postgres")
+        if not a.no_embed:
+            from aiact.embed import fill
+            print(f"{fill()} chunk embeddings written")
 
 
 if __name__ == "__main__":

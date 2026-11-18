@@ -7,10 +7,13 @@ Chat assistant that tells small companies which EU AI Act rules apply to them, w
 ```bash
 cp .env.example .env
 docker compose up -d db              # Postgres 17 + pgvector on :5433, schema from db/schema.sql
+ollama pull bge-m3                   # embedding model (1.2 GB)
 uv sync
 uv run python -m aiact.sources       # download sources into data/raw (cached)
-uv run python -m aiact.ingest        # parse -> data/corpus/chunks.jsonl -> Postgres
+uv run python -m aiact.ingest        # parse -> data/corpus/chunks.jsonl -> Postgres -> BGE-M3 embeddings (cached)
 uv run pytest
+uv run python -m aiact.search "Do I have to tell users they talk to a chatbot?"
+uv run python -m aiact.eval_retrieval   # -> eval/results/retrieval.md
 ```
 
 Check for a newer consolidated AI Act: `uv run python -m aiact.sources --check-consolidated`
@@ -26,3 +29,14 @@ Check for a newer consolidated AI Act: `uv run python -m aiact.sources --check-c
 | `eu-service-desk-faq` | AI Act Service Desk FAQ | one per Q&A (outdated "Digital Omnibus" proposal items excluded) |
 
 EUR-Lex blocks scripts, so EU law comes from the Publications Office Cellar API (same text).
+
+## Search (day 2)
+
+`aiact.search.search(query, k)` fuses four rankings with Reciprocal Rank Fusion:
+
+1. **dense**: BGE-M3 (Ollama) over `context + text`, pgvector cosine
+2. **keyword**: BM25 over the Postgres English tsvectors (`ts_rank` has no IDF, so "AI" swamped every query)
+3. **cited law** (weight 2): AI Act chunks cited by the top guideline/FAQ/recital hits. Without it, Art. 50 guideline paragraphs push Art. 50 itself out of the top 10
+4. **exact refs** (weight 2): articles/annexes/recitals named in the query; the best chunk of each is pinned first
+
+Test set: `eval/questions.yaml` (30 questions, gold `article_ref`s, expected answer gist). Results in `eval/results/retrieval.md`: hit@5 0.62 (dense only) → 0.76, hit@10 0.76 → 0.83. No reranker yet.

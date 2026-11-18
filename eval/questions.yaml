@@ -1,0 +1,188 @@
+# Test set v1 (30 questions). Used for retrieval eval (day 2) and answer eval (day 5).
+#
+# gold: corpus `article_ref`s that answer the question. A chunk matches a gold ref if it is
+#       that ref or a sub-part of it ('Art. 50(1)' matches 'Art. 50'; 'Annex III point 4'
+#       matches 'Annex III'). "A | B" means either one counts.
+#       Empty gold = nothing in the corpus should answer it (out of scope).
+# answer: the gist a correct answer must contain (for the day 5 answer eval).
+# Gold refs were checked against corpus 2026-11-18 (AI Act consolidated 27 Jul 2026).
+
+- id: q01
+  type: named_ref
+  question: What does Article 50(1) of the AI Act require?
+  gold: [Art. 50(1)]
+  answer: Providers must design AI systems that interact directly with people so those people are informed they are interacting with an AI system, unless obvious or authorised by law for law enforcement.
+
+- id: q02
+  type: named_ref
+  question: Which areas are listed in Annex III?
+  gold: [Annex III]
+  answer: Biometrics, critical infrastructure, education, employment, essential services (incl. credit and insurance), law enforcement, migration/border, administration of justice and democratic processes.
+
+- id: q03
+  type: named_ref
+  question: What does Art. 4 say about AI literacy?
+  gold: [Art. 4]
+  answer: Providers and deployers take measures to support AI literacy of their staff; the Commission and Member States support them, in particular SMEs.
+
+- id: q04
+  type: definition
+  question: Who counts as a deployer under the AI Act?
+  gold: [Art. 3(4)]
+  answer: Any natural or legal person, public authority or body using an AI system under its authority, except for personal non-professional use.
+
+- id: q05
+  type: definition
+  question: How does the regulation define an AI system?
+  gold: [Art. 3(1)]
+  answer: Machine-based system, varying autonomy, may adapt after deployment, infers from input how to generate outputs (predictions, content, recommendations, decisions) that can influence environments.
+
+- id: q06
+  type: definition
+  question: What counts as a deep fake?
+  gold: [Art. 3(60)]
+  answer: AI-generated or manipulated image, audio or video content resembling existing persons, objects, places, entities or events that would falsely appear authentic.
+
+- id: q07
+  type: transparency
+  question: Our website has a customer-support chatbot that talks to consumers. Do we have to tell users they are chatting with an AI?
+  gold: [Art. 50(1)]
+  answer: Yes, under Art. 50(1) the provider must ensure people are informed they interact with AI unless obvious; applies from 2 August 2026.
+
+- id: q08
+  type: transparency
+  question: We sell an image generation tool. Do its outputs need to be watermarked or marked as AI-generated?
+  gold: [Art. 50(2)]
+  answer: Yes, providers must mark outputs in a machine-readable format detectable as AI-generated (Art. 50(2)); systems already on the market before 2 Aug 2026 have until 2 Dec 2026.
+
+- id: q09
+  type: transparency
+  question: For a marketing campaign we used AI to make a video of a real politician saying things they never said. What do we have to disclose?
+  gold: [Art. 50(4)]
+  answer: As deployer of a deep fake you must disclose that the content is artificially generated or manipulated (Art. 50(4)).
+
+- id: q10
+  type: transparency
+  question: When is it obvious enough that someone is talking to an AI that the chatbot disclosure is not needed?
+  gold: ["Art. 50(1)", "Art. 50 Guidelines, para. 42 | Art. 50 Guidelines, para. 45"]
+  answer: When it is obvious to a reasonably well-informed, observant and circumspect person, taking into account the circumstances and context; the provider must assess and be able to demonstrate this.
+
+- id: q11
+  type: transparency
+  question: We publish AI-written news articles on our site. Do we need to say they are AI-generated if a human editor reviews them?
+  gold: [Art. 50(4)]
+  answer: AI-generated text published to inform the public on matters of public interest must be disclosed, unless it underwent human review or editorial control and someone holds editorial responsibility.
+
+- id: q12
+  type: prohibited
+  question: Can we use software that detects our employees' emotions during video meetings?
+  gold: [Art. 5(1)(f)]
+  answer: No, emotion recognition in the workplace is prohibited (Art. 5(1)(f)) except for medical or safety reasons.
+
+- id: q13
+  type: prohibited
+  question: Is it legal to score people based on their social behaviour and then restrict their access to services?
+  gold: [Art. 5(1)(c)]
+  answer: No, social scoring leading to detrimental or unfavourable treatment is prohibited (Art. 5(1)(c)).
+
+- id: q14
+  type: prohibited
+  question: Why does the AI Act ban emotion recognition at work and in schools?
+  gold: [Recital 44]
+  answer: Concerns about the scientific basis (limited reliability, specificity, generalisability) and the power imbalance in work and education contexts, risking discriminatory outcomes.
+
+- id: q15
+  type: high_risk
+  question: We are building a tool that screens CVs and ranks job applicants. Is it high-risk?
+  gold: [Annex III point 4, Art. 6(2)]
+  answer: Yes, recruitment/selection systems are high-risk under Annex III point 4(a) via Art. 6(2), unless the Art. 6(3) derogation applies.
+
+- id: q16
+  type: high_risk
+  question: Is an AI system that decides who gets a consumer loan based on creditworthiness high-risk?
+  gold: [Annex III point 5]
+  answer: Yes, creditworthiness assessment and credit scoring of natural persons is high-risk (Annex III point 5(b)), except for detecting financial fraud.
+
+- id: q17
+  type: high_risk
+  question: Can an Annex III system avoid being high-risk if it only performs a narrow procedural task?
+  gold: [Art. 6(3)]
+  answer: Yes, under Art. 6(3) if it does not pose a significant risk (e.g. narrow procedural task), but never if it performs profiling; the provider must document the assessment.
+
+- id: q18
+  type: high_risk
+  question: Is software that grades students' exams considered high-risk?
+  gold: [Annex III point 3]
+  answer: Yes, AI evaluating learning outcomes is high-risk under Annex III point 3(b).
+
+- id: q19
+  type: obligations
+  question: What are the obligations of a company that uses a high-risk AI system bought from a vendor?
+  gold: [Art. 26]
+  answer: Deployer duties under Art. 26 - use per instructions, human oversight, input data relevance, monitoring, log keeping, informing workers and affected persons.
+
+- id: q20
+  type: obligations
+  question: What must the provider of a high-risk AI system do before and after placing it on the market?
+  gold: [Art. 16]
+  answer: Art. 16 list - meet Section 2 requirements, quality management system, documentation, logs, conformity assessment, EU declaration, CE marking, registration, corrective actions.
+
+- id: q21
+  type: obligations
+  question: Which deployers have to carry out a fundamental rights impact assessment?
+  gold: [Art. 27(1)]
+  answer: Public bodies and private entities providing public services, and deployers of credit scoring or life/health insurance pricing systems (Annex III 5(b),(c)).
+
+- id: q22
+  type: obligations
+  question: If we put our own brand name on a high-risk AI system made by another company, do we become its provider?
+  gold: [Art. 25(1)]
+  answer: Yes, under Art. 25(1)(a) you are considered the provider, without prejudice to contractual arrangements.
+
+- id: q23
+  type: date
+  question: When do the rules for high-risk AI systems listed in Annex III start to apply?
+  gold: [Art. 113]
+  answer: 2 December 2027 (after the Digital Omnibus); Annex I systems from 2 August 2028.
+
+- id: q24
+  type: date
+  question: Our image generator was already on the market before August 2026. By when must its outputs carry machine-readable marking?
+  gold: [Art. 111(4)]
+  answer: By 2 December 2026 (Art. 111(4)).
+
+- id: q25
+  type: penalties
+  question: What is the maximum fine for using a prohibited AI practice?
+  gold: [Art. 99(3)]
+  answer: Up to EUR 35 million or 7% of worldwide annual turnover, whichever is higher.
+
+- id: q26
+  type: penalties
+  question: Are fines lower for SMEs and start-ups?
+  gold: [Art. 99(6)]
+  answer: Yes, for SMEs each fine is capped at the lower of the percentage or the fixed amount.
+
+- id: q27
+  type: scope
+  question: We are a US company with no EU office, but the output of our AI system is used in the EU. Does the AI Act apply to us?
+  gold: [Art. 2(1)]
+  answer: Yes, Art. 2(1)(c) covers third-country providers and deployers where the output is used in the Union.
+
+- id: q28
+  type: gpai
+  question: What obligations apply to providers of general-purpose AI models?
+  gold: [Art. 53(1)]
+  answer: Technical documentation (Annex XI), information for downstream providers (Annex XII), copyright policy, public summary of training content; open-source exemptions apply.
+
+- id: q29
+  type: faq
+  question: Are AI agents covered by the AI Act?
+  gold: ["Service Desk FAQ: How are AI agents addressed within the AI Act?"]
+  answer: No separate category - AI agents are AI systems (often built on GPAI models) and the usual rules apply depending on use.
+
+- id: q30
+  type: out_of_scope
+  question: What is the corporate tax rate in Finland?
+  gold: []
+  answer: Out of scope - the assistant only covers the AI Act and should say so.

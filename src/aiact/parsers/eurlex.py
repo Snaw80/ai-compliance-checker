@@ -246,7 +246,8 @@ def parse_consolidated(path: Path, doc: Document) -> list[Chunk]:
         num = ARTICLE_ID.match(art["id"]).group(1)
         anchor = art["id"]
         title_el = art.find(class_="stitle-article-norm")
-        title = clean_ws(title_el.get_text(" ")) if title_el else None
+        # strip("'"): the consolidated text has a stray quote in Art. 1 ("Subject matter'")
+        title = clean_ws(title_el.get_text(" ")).strip("'") if title_el else None
         art_label = f"Article {num}" + (f" {title}" if title else "")
         ctx_base = [*_division_titles(art), art_label]
 
