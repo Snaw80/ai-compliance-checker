@@ -1,0 +1,292 @@
+# Applicability table: from when does each part of the AI Act apply?
+#
+# Read by aiact.tables.lookup_applicability(). The agent NEVER infers dates from retrieved text
+# or from model memory; it reads this table.
+#
+# Legal basis: AI Act consolidated 27 Jul 2026 (CELEX 02024R1689-20260727, includes the
+# Digital Omnibus on AI, Reg. 2026/1744): Art. 113 (dates of application) and Art. 111
+# (transitional rules for systems/models already on the market). Dates are EU-wide: the AI Act
+# is a regulation, so the same dates hold in every member state. EEA countries (NO, IS, LI) are
+# not bound until the Act is incorporated into the EEA Agreement (see tables/countries.yaml).
+#
+# Coverage: every AI Act article gets a date. Rows list the articles they cover ("Art. 6-27" is a
+# range of whole articles); any article not listed falls back to the `default: true` row
+# (Art. 113 general date). A query for a sub-part ("Art. 5(1)(ba)") picks the most specific row.
+#
+# Fields:
+#   id                stable key, used by the agent and tests
+#   obligation        plain-English label
+#   articles          AI Act refs covered by the row
+#   roles             who it is addressed to: provider, deployer, importer, distributor,
+#                     authorised_representative, gpai_provider, notified_body, member_state,
+#                     commission, any
+#   applies_from      date of application
+#   basis             the legal provision that sets the date
+#   source_chunk_ids  corpus chunks the agent can cite for the date (checked by tests)
+#   transitions       grace periods / special rules for things already on the market
+#   notes             caveats the answer should carry
+#
+# Checked against the corpus on 2026-11-19. Re-check when a new consolidated text appears
+# (`uv run python -m aiact.sources --check-consolidated`).
+
+version: 2026-11-19
+source: AI Act consolidated 27 Jul 2026 (CELEX 02024R1689-20260727)
+
+obligations:
+
+  # --- Chapters I and II: 2 Feb 2025 (Art. 113(a)) -------------------------------------------
+
+  - id: scope-and-definitions
+    obligation: Subject matter, scope and definitions (who is a provider, deployer, etc.)
+    articles: [Art. 1-3]
+    roles: [any]
+    applies_from: 2025-02-02
+    basis: Art. 113, third paragraph, point (a) (Chapter I)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113]
+
+  - id: ai-literacy
+    obligation: Take measures to support AI literacy of staff and others operating AI systems
+    articles: [Art. 4]
+    roles: [provider, deployer]
+    applies_from: 2025-02-02
+    basis: Art. 113, third paragraph, point (a) (Chapter I)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113, eu-ai-act-consolidated:art_4:1]
+    notes: >-
+      Reworded by the Omnibus (Reg. 2026/1744): providers and deployers must "take measures to
+      support" AI literacy; they do not have to guarantee a specific level for any individual.
+
+  - id: bias-data-processing
+    obligation: >-
+      Legal basis to process special categories of personal data for bias detection and
+      correction (a permission, not an obligation)
+    articles: [Art. 4a]
+    roles: [provider, deployer]
+    applies_from: 2026-07-27
+    basis: Inserted by Reg. 2026/1744 (in force 27 Jul 2026) into Chapter I
+    source_chunk_ids: [eu-ai-act-consolidated:art_113]
+    notes: >-
+      Chapter I formally applies from 2 Feb 2025, but Art. 4a only exists since the Omnibus
+      entered into force on 27 Jul 2026, so that date is used.
+
+  - id: prohibited-practices
+    obligation: Prohibited AI practices (manipulation, social scoring, emotion recognition at work, ...)
+    articles: [Art. 5]
+    roles: [any]
+    applies_from: 2025-02-02
+    basis: Art. 113, third paragraph, point (a) (Chapter II)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113]
+
+  - id: prohibited-intimate-deepfakes
+    obligation: >-
+      New prohibitions: AI systems generating non-consensual intimate images of identifiable
+      people, or child sexual abuse material
+    articles: [Art. 5(1)(ba), Art. 5(1)(bb), Art. 5(1a), Art. 5(1b)]
+    roles: [any]
+    applies_from: 2026-12-02
+    basis: Art. 113, third paragraph, point (a), exception added by Reg. 2026/1744
+    source_chunk_ids:
+      - eu-ai-act-consolidated:art_113
+      - eu-ai-act-consolidated:art_5:1.ba
+      - eu-ai-act-consolidated:art_5:1.bb
+      - eu-ai-act-consolidated:art_5:1a
+      - eu-ai-act-consolidated:art_5:1b
+
+  # --- Chapter III: high-risk AI systems -------------------------------------------------------
+
+  - id: high-risk-annex-iii
+    obligation: >-
+      High-risk requirements and operator obligations for systems high-risk under Art. 6(2) +
+      Annex III (biometrics, education, employment, credit, ...), incl. deployer duties (Art. 26)
+      and fundamental rights impact assessment (Art. 27)
+    articles: [Art. 6-27, Annex III]
+    roles: [provider, deployer, importer, distributor, authorised_representative]
+    applies_from: 2027-12-02
+    basis: Art. 113, third paragraph, point (c)(i), as amended by Reg. 2026/1744 (was 2 Aug 2026)
+    source_chunk_ids:
+      - eu-ai-act-consolidated:art_113
+      - eu-ai-act-consolidated:art_111:1
+      - eu-ai-act-consolidated:art_111:2
+    transitions:
+      - applies_to: High-risk systems placed on the market or put into service before 2 Dec 2027
+        effect: The Act applies to them only if their design changes significantly from that date.
+        articles: [Art. 111(2)]
+      - applies_to: High-risk systems intended to be used by public authorities
+        effect: Providers and deployers must comply by this deadline even without significant changes.
+        deadline: 2030-08-02
+        articles: [Art. 111(2)]
+      - applies_to: Components of EU large-scale IT systems (Annex X) placed on the market before 2 Aug 2027
+        effect: Must be brought into compliance by this deadline.
+        deadline: 2030-12-31
+        articles: [Art. 111(1)]
+    notes: >-
+      Art. 6(5) (Commission guidelines on classification) is excluded from this date.
+
+  - id: high-risk-annex-i
+    obligation: >-
+      High-risk requirements and operator obligations for AI that is (a safety component of) a
+      product covered by Annex I EU product law (machinery, toys, medical devices, ...)
+    articles: [Art. 6-27, Annex I]
+    roles: [provider, deployer, importer, distributor, authorised_representative]
+    applies_from: 2028-08-02
+    basis: Art. 113, third paragraph, point (c)(ii), as amended by Reg. 2026/1744 (was 2 Aug 2027)
+    source_chunk_ids:
+      - eu-ai-act-consolidated:art_113
+      - eu-ai-act-consolidated:art_111:2
+    transitions:
+      - applies_to: High-risk systems placed on the market or put into service before 2 Aug 2028
+        effect: The Act applies to them only if their design changes significantly from that date.
+        articles: [Art. 111(2)]
+      - applies_to: High-risk systems intended to be used by public authorities
+        effect: Providers and deployers must comply by this deadline even without significant changes.
+        deadline: 2030-08-02
+        articles: [Art. 111(2)]
+
+  - id: notified-bodies
+    obligation: Notifying authorities and notified bodies (conformity assessment bodies)
+    articles: [Art. 28-39]
+    roles: [member_state, notified_body]
+    applies_from: 2025-08-02
+    basis: Art. 113, third paragraph, point (b) (Chapter III Section 4)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113]
+
+  - id: high-risk-conformity-procedures
+    obligation: >-
+      Standards, conformity assessment, certificates, CE marking and registration (incl.
+      registering systems a provider considers not high-risk, Art. 49(2))
+    articles: [Art. 40-49]
+    roles: [provider, deployer, authorised_representative]
+    applies_from: 2026-08-02
+    basis: Art. 113, second paragraph (general date; Section 5 is not among the exceptions)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113, eu-ai-act-consolidated:art_49:2]
+    notes: >-
+      Literally applies from the general date, but these procedures serve the high-risk
+      requirements, which only apply from 2 Dec 2027 (Annex III) or 2 Aug 2028 (Annex I). In
+      practice they bite when the matching high-risk row applies; say so in answers.
+
+  # --- Chapter IV: transparency, general date 2 Aug 2026 ----------------------------------------
+
+  - id: art50-chatbot-disclosure
+    obligation: Inform people that they are interacting with an AI system (chatbots, voice agents)
+    articles: [Art. 50(1)]
+    roles: [provider]
+    applies_from: 2026-08-02
+    basis: Art. 113, second paragraph (general date)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113, eu-ai-act-consolidated:art_50:1]
+    notes: No grace period; the Art. 111(4) delay only covers Art. 50(2) marking.
+
+  - id: art50-content-marking
+    obligation: Mark AI-generated audio, image, video and text as machine-readable and detectable
+    articles: [Art. 50(2)]
+    roles: [provider, gpai_provider]
+    applies_from: 2026-08-02
+    basis: Art. 113, second paragraph (general date)
+    source_chunk_ids:
+      - eu-ai-act-consolidated:art_113
+      - eu-ai-act-consolidated:art_50:2
+      - eu-ai-act-consolidated:art_111:4
+    transitions:
+      - applies_to: Systems placed on the market before 2 Aug 2026
+        effect: Must comply with Art. 50(2) by this deadline.
+        deadline: 2026-12-02
+        articles: [Art. 111(4)]
+
+  - id: art50-emotion-biometric-notice
+    obligation: Inform people exposed to emotion recognition or biometric categorisation
+    articles: [Art. 50(3)]
+    roles: [deployer]
+    applies_from: 2026-08-02
+    basis: Art. 113, second paragraph (general date)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113, eu-ai-act-consolidated:art_50:3]
+
+  - id: art50-deepfake-disclosure
+    obligation: Disclose deepfakes and AI-generated text published to inform the public
+    articles: [Art. 50(4)]
+    roles: [deployer]
+    applies_from: 2026-08-02
+    basis: Art. 113, second paragraph (general date)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113, eu-ai-act-consolidated:art_50:4]
+
+  # --- Chapter V: general-purpose AI models, 2 Aug 2025 -----------------------------------------
+
+  - id: gpai-model-obligations
+    obligation: Obligations of providers of general-purpose AI models (incl. systemic-risk models)
+    articles: [Art. 51-56]
+    roles: [gpai_provider]
+    applies_from: 2025-08-02
+    basis: Art. 113, third paragraph, point (b) (Chapter V)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113, eu-ai-act-consolidated:art_111:3]
+    transitions:
+      - applies_to: General-purpose AI models placed on the market before 2 Aug 2025
+        effect: Must comply by this deadline.
+        deadline: 2027-08-02
+        articles: [Art. 111(3)]
+    notes: >-
+      The Commission's fines on GPAI providers (Art. 101) only apply from 2 Aug 2026. A company
+      that only uses a GPAI model through an API is usually not a GPAI provider.
+
+  # --- Chapters VI, VII, XII and final provisions ------------------------------------------------
+
+  - id: regulatory-sandboxes
+    obligation: Member states must run at least one national AI regulatory sandbox
+    articles: [Art. 57]
+    roles: [member_state]
+    applies_from: 2026-08-02
+    basis: Art. 113, second paragraph (general date); deadline in Art. 57(1)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113, eu-ai-act-consolidated:art_57:1]
+    notes: >-
+      The sandbox must be operational by 2 Aug 2027 (moved from 2 Aug 2026 by the Omnibus).
+      Per-country sandbox status is in the country profile.
+
+  - id: governance
+    obligation: AI Office, AI Board and national competent authorities (designation, single point of contact)
+    articles: [Art. 64-70]
+    roles: [commission, member_state]
+    applies_from: 2025-08-02
+    basis: Art. 113, third paragraph, point (b) (Chapter VII)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113, eu-ai-act-consolidated:art_70:2]
+    notes: >-
+      Member states had to designate authorities by 2 Aug 2025; many had not. Use the country
+      profile for who is actually designated.
+
+  - id: confidentiality
+    obligation: Confidentiality of information obtained by authorities
+    articles: [Art. 78]
+    roles: [member_state, commission, notified_body]
+    applies_from: 2025-08-02
+    basis: Art. 113, third paragraph, point (b)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113]
+
+  - id: penalties
+    obligation: National penalty rules and fines for infringements (EU maximums)
+    articles: [Art. 99-100]
+    roles: [member_state, any]
+    applies_from: 2025-08-02
+    basis: Art. 113, third paragraph, point (b) (Chapter XII, except Art. 101)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113, eu-ai-act-consolidated:art_99:1]
+    notes: >-
+      A fine needs an infringed obligation that already applies, e.g. no fine for Annex III
+      high-risk duties before 2 Dec 2027. Whether national penalty rules exist yet is in the
+      country profile.
+
+  - id: amendments-to-other-acts
+    obligation: Amendments to other EU acts (Art. 102-110)
+    articles: [Art. 102-110]
+    roles: [any]
+    applies_from: 2026-07-27
+    basis: Art. 113, third paragraph, point (d)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113]
+
+  - id: general-application
+    default: true
+    obligation: >-
+      Everything not listed above: EU database (Art. 71), post-market monitoring, incident
+      reporting and market surveillance (Chapter IX), Commission fines on GPAI providers
+      (Art. 101), innovation measures, codes of conduct, ...
+    articles: []
+    roles: [any]
+    applies_from: 2026-08-02
+    basis: Art. 113, second paragraph (general date of application)
+    source_chunk_ids: [eu-ai-act-consolidated:art_113, eu-ai-act-consolidated:art_101:1]
+    notes: >-
+      Provisions that only concern high-risk systems (e.g. serious incident reporting, Art. 73)
+      have no practical effect before the matching high-risk row applies.

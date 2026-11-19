@@ -1,0 +1,703 @@
+# Country profile table: one row per EU member state (27) + EEA EFTA state (3).
+#
+# Read by aiact.tables.get_country_profile(). The AI Act is the same in every member state;
+# this table holds only what differs by country (who supervises, national law, penalties,
+# sandbox). Answers must show `last_verified` and the sources.
+#
+# Seeded 2026-11-19 from two trackers, newest wins on conflicts:
+#   - aiactguide.net (statuses as of 24 Oct 2026; Germany/Spain pages Nov/Oct 2026)
+#   - FLI national implementation plans (17 Jun 2026)
+# plus the AI Act Service Desk national-resources directory and research/05-country-coverage.md.
+# The Commission's Art. 70(2) single-point-of-contact list could not be fetched (not linked from
+# the Service Desk Art. 70 page).
+#
+# confidence:
+#   high   = a human checked the row against the official gazette / government page
+#   medium = trackers agree, or a recent tracker cites the official text (not opened by us)
+#   low    = single source, trackers disagree, or only proposals exist
+# No row is `high` yet: nobody has opened the gazettes. Raise a row to `high` only after you
+# have checked it yourself, and bump `last_verified`.
+#
+# Enums:
+#   membership: EU | EEA
+#   coverage_tier: deep (national documents indexed for RAG) | profile_only
+#   national_law.status: in_force | adopted | bill | draft | lapsed | none | unknown
+#   authority status: designated | proposed | unclear
+#   penalties.status: national_rules | none | unknown
+#   sandbox.status: operational | pilot | planned | none | unknown
+
+sources:
+  aiactguide: {title: "aiactguide.net: AI Act national authorities", url: "https://aiactguide.net/authorities/", as_of: 2026-11-11}
+  fli: {title: "FLI: national implementation plans", url: "https://artificialintelligenceact.eu/national-implementation-plans/", as_of: 2026-06-17}
+  service_desk: {title: "AI Act Service Desk: national resources", url: "https://ai-act-service-desk.ec.europa.eu/en/national-resources", as_of: 2026-11-19}
+  research: {title: "Project research notes (research/00-overview.md, 05-country-coverage.md)", url: "research/05-country-coverage.md", as_of: 2026-11-18}
+
+countries:
+
+  - iso2: AT
+    name: Austria
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: none}
+    single_point_of_contact: null
+    market_surveillance_authorities: []
+    notifying_authorities: []
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: >-
+      The KI-Servicestelle (AI Service Desk) at RTR, the broadcasting and telecoms regulator,
+      gives guidance and runs a German-language chatbot. It is expected to become a market
+      surveillance authority eventually.
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [No authorities designated and no Commission-list entry as of Oct 2026.]
+
+  - iso2: BE
+    name: Belgium
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: none}
+    single_point_of_contact: null
+    market_surveillance_authorities:
+      - {name: Belgian Institute for Postal Services and Telecommunications (BIPT), scope: expected main authority (coalition agreement 2025-2029), status: proposed}
+    notifying_authorities: []
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: The FPS Economy publishes the list of Belgian Art. 77 fundamental-rights authorities.
+    sources: [fli, aiactguide, service_desk, {title: FPS Economy - artificial intelligence, url: "https://economie.fgov.be/nl/themas/online/artificiele-intelligentie"}]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  - iso2: BG
+    name: Bulgaria
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: unknown}
+    single_point_of_contact: null
+    market_surveillance_authorities: []
+    notifying_authorities: []
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: The Ministry of Electronic Governance coordinates AI Act implementation.
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: low
+    open_questions: [Commission list shows an entry "pending final adoption" (aiactguide); which authority is not stated.]
+
+  - iso2: HR
+    name: Croatia
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: none}
+    single_point_of_contact: null
+    market_surveillance_authorities: []
+    notifying_authorities: []
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: The Central State Office for the Development of Digital Society represents Croatia at the AI Board.
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  - iso2: CY
+    name: Cyprus
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: draft
+      name: Draft AI Law of 2026 (public consultation 16 Aug - 16 Sep 2026)
+      notes: Authorities designated by Council of Ministers decision of 22 Jan 2025.
+    single_point_of_contact: {name: Commissioner of Communications, status: designated, url: "https://aiact.cy"}
+    market_surveillance_authorities:
+      - {name: Commissioner of Communications, scope: default, status: designated}
+      - {name: Commissioner for Personal Data Protection, scope: "Annex III points 1, 6, 7, 8", status: designated}
+    notifying_authorities:
+      - {name: Commissioner of Communications, status: designated}
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [aiactguide, fli, service_desk]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [aiactguide counts Cyprus as "adopted framework" although the AI Law itself is still a draft; designation rests on the 2025 government decision.]
+
+  - iso2: CZ
+    name: Czechia
+    aliases: [Czech Republic]
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: bill
+      name: Draft AI act (eKLEP 503/26, documents of 26 Jun 2026), with the government
+      url: "https://odok.gov.cz/portal/veklep/material/KORNDLSJSEUC/"
+    single_point_of_contact: {name: Czech Telecommunication Office (ČTÚ), status: proposed}
+    market_surveillance_authorities:
+      - {name: Czech Telecommunication Office (ČTÚ), scope: main authority, status: proposed}
+    notifying_authorities:
+      - {name: "Office for Standards, Metrology and Testing (ÚNMZ)", status: proposed}
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [aiactguide, fli]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  - iso2: DK
+    name: Denmark
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: in_force
+      name: Act on supplementary provisions to the AI Regulation
+      ref: Lov nr. 467 af 14. maj 2025
+      in_force_from: 2025-08-02
+      url: "https://www.retsinformation.dk/eli/lta/2025/467"
+      notes: Amending bill L 3 pending (first reading scheduled 5 Nov 2026).
+    single_point_of_contact: {name: Danish Agency for Digital Government (Digitaliseringsstyrelsen), status: designated}
+    market_surveillance_authorities:
+      - {name: Danish Agency for Digital Government (Digitaliseringsstyrelsen), scope: "coordinating; Art. 5(1)(a)-(c), (e), (f)", status: designated}
+      - {name: Danish Data Protection Agency (Datatilsynet), scope: "Art. 5(1)(d), (g)", status: designated}
+      - {name: Danish Court Administration (Domstolsstyrelsen), scope: courts, status: designated}
+    notifying_authorities:
+      - {name: Danish Agency for Digital Government (Digitaliseringsstyrelsen), status: designated}
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [aiactguide, fli]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  - iso2: EE
+    name: Estonia
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: unknown}
+    single_point_of_contact: {name: Consumer Protection and Technical Regulatory Authority (TTJA), status: proposed}
+    market_surveillance_authorities: []
+    notifying_authorities: []
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: The Ministry of Economic Affairs and Communications represents Estonia at the AI Board.
+    sources: [aiactguide, fli]
+    last_verified: 2026-11-19
+    confidence: low
+    open_questions: [FLI (Jun 2026) says nothing appointed; Commission list shows TTJA "pending final adoption" (aiactguide).]
+
+  - iso2: FI
+    name: Finland
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: in_force
+      name: Act on the Supervision of Certain AI Systems
+      ref: 1377/2025
+      in_force_from: 2026-01-01
+      url: "https://finlex.fi/fi/lainsaadanto/saadoskokoelma/2025/1377"
+      notes: A second-phase amendment is pending; sources disagree on its timing.
+    single_point_of_contact: {name: Traficom (Finnish Transport and Communications Agency), status: designated}
+    market_surveillance_authorities:
+      - {name: Traficom, scope: "transparency (Art. 50) and other areas under §§ 3-5", status: designated}
+      - {name: Tukes (Safety and Chemicals Agency), scope: sectoral, status: designated}
+      - {name: Finnish Customs (Tulli), scope: sectoral, status: designated}
+      - {name: Lupa- ja valvontavirasto (Permit and Supervision Agency), scope: sectoral, status: designated}
+      - {name: Fimea (Finnish Medicines Agency), scope: medical, status: designated}
+      - {name: Energy Authority (Energiavirasto), scope: energy, status: designated}
+      - {name: Data Protection Ombudsman (tietosuojavaltuutettu), scope: sectoral, status: designated}
+      - {name: Financial Supervisory Authority (Finanssivalvonta), scope: financial, status: designated}
+    notifying_authorities:
+      - {name: Ministry of Economic Affairs and Employment (TEM), status: designated}
+      - {name: Traficom, status: designated}
+      - {name: Fimea, status: designated}
+      - {name: Ministry of Social Affairs and Health (STM), status: designated}
+    penalties:
+      status: national_rules
+      notes: Separate sanctions board for fines above EUR 300 000; no fines on state and municipal authorities (§ 24).
+    sandbox: {status: unknown}
+    national_extras: High-risk supervision is split across sectoral authorities; Traficom is not the authority for every question.
+    sources: [aiactguide, fli, research]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [Exact scope of each authority (§§ 3-5) not yet read from the act itself.]
+
+  - iso2: FR
+    name: France
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: bill, name: Draft designation law (decentralised model)}
+    single_point_of_contact: {name: "DGCCRF (Directorate-General for Competition, Consumer Affairs and Fraud Control)", status: proposed}
+    market_surveillance_authorities:
+      - {name: DGCCRF, scope: coordinating authority; existing sector authorities extended to AI, status: proposed}
+    notifying_authorities: []
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: CNIL publishes AI guidance (data protection side).
+    sources: [aiactguide, fli, research]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [Status of the French designation bill after June 2026 not confirmed.]
+
+  - iso2: DE
+    name: Germany
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: in_force
+      name: KI-Marktüberwachungs- und Innovationsförderungsgesetz (KI-MIG)
+      ref: BGBl. 2026 I Nr. 223 (28 Jul 2026)
+      in_force_from: 2026-07-29
+      url: "https://www.gesetze-im-internet.de/ki-mig/"
+    single_point_of_contact: {name: Bundesnetzagentur (Federal Network Agency), status: designated}
+    market_surveillance_authorities:
+      - {name: Bundesnetzagentur, scope: default for every AI system unless another body is competent (§ 2(1)), status: designated}
+      - {name: KI-Marktüberwachungskammer at the Bundesnetzagentur, scope: "Annex III points 1, 6, 7, 8 (§§ 2(5), 4)", status: designated}
+      - {name: BaFin, scope: AI directly linked to regulated financial activity (§ 2(3)), status: designated}
+      - {name: Sector authorities under Annex I Section A law, scope: AI in regulated products (§ 2(2)), status: designated}
+      - {name: Land (state) authorities, scope: "Land public bodies and media providers (§ 2(6), (8))", status: designated}
+    notifying_authorities:
+      - {name: Sector notifying authorities, scope: § 3(1), status: designated}
+      - {name: BSI (interim), scope: Annex III point 1 (§ 3(2)), status: designated}
+      - {name: DAkkS, scope: accreditation body (§ 3(4)), status: designated}
+    penalties:
+      status: national_rules
+      notes: AI Act Art. 99 applied via the OWiG (§ 16); national offences up to EUR 50 000 (§ 15(3)); no fines on public bodies (§ 17(2)).
+    sandbox:
+      status: planned
+      notes: KI-Reallabor run by the Bundesnetzagentur (§ 13); a real-world testing plan counts as approved if there is no answer within 30 days (§ 14).
+    national_extras: null
+    sources: [aiactguide, fli, {title: BGBl. 2026 I Nr. 223, url: "https://www.recht.bund.de/bgbl/1/2026/223/VO.html"}]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [Full official title of KI-MIG not confirmed (tracker gives two expansions). FLI (Jun 2026) still listed it as a draft; superseded by enactment on 28 Jul 2026.]
+
+  - iso2: GR
+    name: Greece
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: unknown, notes: Draft legislation was expected in June 2026.}
+    single_point_of_contact: null
+    market_surveillance_authorities: []
+    notifying_authorities: []
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: The Ministry of Digital Governance represents Greece at the AI Board.
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: low
+    open_questions: [FLI says nothing appointed; Commission list shows the Hellenic Data Protection Authority (HDPA) without a "pending" mark. Unclear in which role.]
+
+  - iso2: HU
+    name: Hungary
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: in_force
+      name: Act LXXV of 2025 and Government Decree 344/2025
+      ref: Government Decree 344/2025
+      in_force_from: 2025-12-01
+      url: "https://njt.jog.gov.hu/jogszabaly/2025-344-20-22"
+    single_point_of_contact: {name: Minister responsible for enterprise development, status: designated}
+    market_surveillance_authorities:
+      - {name: Minister responsible for enterprise development, scope: default, status: designated}
+    notifying_authorities:
+      - {name: National Accreditation Authority (Nemzeti Akkreditáló Hatóság), status: designated}
+    penalties:
+      status: national_rules
+      notes: "Caps of HUF 13.3 bn / 5.7 bn / 2.85 bn by infringement tier (Decree 344/2025 § 4)."
+    sandbox: {status: unknown}
+    national_extras: "Fundamental-rights authority: National Authority for Data Protection and Freedom of Information (NAIH)."
+    sources: [aiactguide, fli]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [Commission list names the Ministry of Science and Technology rather than the enterprise-development minister.]
+
+  - iso2: IE
+    name: Ireland
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: in_force
+      name: Statutory Instrument designating competent authorities
+      ref: S.I. No. 366 of 2025
+    single_point_of_contact: {name: "Minister for Enterprise, Tourism and Employment", status: designated}
+    market_surveillance_authorities:
+      - {name: 15 existing sectoral bodies, scope: decentralised model, status: designated}
+    notifying_authorities:
+      - {name: "Minister for Enterprise, Tourism and Employment", status: designated}
+      - {name: Minister for Transport, status: designated}
+      - {name: Health Products Regulatory Authority (HPRA), status: designated}
+      - {name: Commission for Communications Regulation (ComReg), status: designated}
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [fli, aiactguide, research]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [A National AI Office was expected by 2 Aug 2026 to take over as single point of contact; not confirmed. The 15 bodies are not listed here yet.]
+
+  - iso2: IT
+    name: Italy
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: in_force
+      name: Law on artificial intelligence
+      ref: Law 132/2025 (GU n. 223 of 25 Sep 2025)
+      in_force_from: 2025-10-10
+      url: "https://www.gazzettaufficiale.it/eli/id/2025/09/25/25G00143/sg"
+      notes: Implemented by D.Lgs. 160/2026 (in force 30 Sep 2026) and D.Lgs. 179/2026 (in force 23 Oct 2026).
+    single_point_of_contact: {name: Agenzia per la Cybersicurezza Nazionale (ACN), status: designated}
+    market_surveillance_authorities:
+      - {name: Agenzia per la Cybersicurezza Nazionale (ACN), scope: default, status: designated}
+      - {name: "Banca d'Italia, CONSOB, IVASS", scope: financial institutions, status: designated}
+      - {name: Garante per la protezione dei dati personali, scope: Art. 74(8), status: designated}
+    notifying_authorities:
+      - {name: Agenzia per l'Italia Digitale (AgID), status: designated}
+    penalties:
+      status: national_rules
+      notes: Up to EUR 1 000 000 or 0.5% for breaches of Art. 27 and 86 (D.Lgs. 179/2026, Art. 23).
+    sandbox: {status: unknown}
+    national_extras: >-
+      Law 132/2025 adds national rules beyond the AI Act (e.g. consent of minors, information
+      for workers, criminal offence for harmful deepfakes). How far it goes beyond the AI Act
+      is debated.
+    sources: [aiactguide, fli, research, {title: GU n. 234 of 8 Oct 2026 (D.Lgs. 179/2026), url: "https://www.gazzettaufficiale.it/eli/gu/2026/10/08/234/sg/html"}]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  - iso2: LV
+    name: Latvia
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: none, notes: Government report only.}
+    single_point_of_contact: {name: Consumer Rights Protection Centre (PTAC), status: proposed}
+    market_surveillance_authorities:
+      - {name: 12-14 sectoral authorities (per government report), scope: sectoral, status: proposed}
+    notifying_authorities:
+      - {name: Ministry of Economics, status: proposed}
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: "Ministry of Smart Administration and Regional Development leads implementation. Fundamental-rights authority: Ombudsman."
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: ['Commission list shows PTAC without a "pending" mark, although no law is reported.']
+
+  - iso2: LT
+    name: Lithuania
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: in_force
+      name: Amendments to the Law on Technology and Innovation and the Law on Information Society Services
+      url: "https://www.e-tar.lt/portal/lt/legalAct/9c30a402d88811efa5ddd96c482819f5"
+    single_point_of_contact: {name: Communications Regulatory Authority (RRT), status: designated}
+    market_surveillance_authorities:
+      - {name: Communications Regulatory Authority (RRT), scope: default, status: designated}
+    notifying_authorities:
+      - {name: Innovation Agency Lithuania, status: designated}
+    penalties: {status: unknown}
+    sandbox: {status: pilot, notes: AI sandbox pilots launched.}
+    national_extras: null
+    sources: [service_desk, fli, aiactguide, {title: Ministry of Economy and Innovation - national competent authorities, url: "https://eimin.lrv.lt/lt/veiklos-sritys/skaitmenine-politika/dirbtinis-intelektas/di-akto-igyvendinimas/nacionalines-kompetentingos-institucijos/"}]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [In-force date of the amending laws not recorded.]
+
+  - iso2: LU
+    name: Luxembourg
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: bill, name: Draft law no. 8476 (introduced Dec 2024)}
+    single_point_of_contact: {name: National Commission for Data Protection (CNPD), status: proposed}
+    market_surveillance_authorities:
+      - {name: National Commission for Data Protection (CNPD), scope: main authority, status: proposed}
+    notifying_authorities:
+      - {name: Luxembourg Accreditation and Surveillance Office (OLAS), status: proposed}
+      - {name: Luxembourg Agency for Medicines and Health Products, status: proposed}
+      - {name: Government Commissioner for Data Protection to the State, status: proposed}
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  - iso2: MT
+    name: Malta
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: in_force
+      name: Legal Notices 226 and 227 of 2025 (Government Gazette No. 21,519, 10 Oct 2025)
+      ref: L.N. 226 of 2025
+      in_force_from: 2026-08-02
+      url: "https://legislation.mt/eli/ln/2025/226/eng"
+      notes: Key regulations in force from 2 Aug 2026.
+    single_point_of_contact: {name: Malta Digital Innovation Authority (MDIA), status: designated}
+    market_surveillance_authorities:
+      - {name: Malta Digital Innovation Authority (MDIA), scope: lead authority, status: designated}
+      - {name: Information and Data Protection Commissioner (IDPC), scope: listed areas, status: designated}
+    notifying_authorities:
+      - {name: Malta Digital Innovation Authority (MDIA), scope: with assessment by the National Accreditation Board, status: designated}
+    penalties:
+      status: national_rules
+      notes: Up to EUR 350 000 or 1%, and EUR 12 000 per day (L.N. 226, reg. 11).
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [aiactguide, fli]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  - iso2: NL
+    name: Netherlands
+    aliases: [The Netherlands, Holland]
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: draft, name: Draft implementation law (internet consultation April 2026)}
+    single_point_of_contact: {name: State Inspectorate for Digital Infrastructure (RDI), status: proposed}
+    market_surveillance_authorities:
+      - {name: Dutch Data Protection Authority (AP) and RDI, scope: coordinating, status: proposed}
+      - {name: "Ten sectoral authorities incl. AFM and De Nederlandsche Bank", scope: sectoral (also notifying), status: proposed}
+    notifying_authorities:
+      - {name: The same ten sectoral authorities, status: proposed}
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: The AP and RDI have published joint recommendations on AI supervision.
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  - iso2: PL
+    name: Poland
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: in_force
+      name: Act of 3 July 2026 on artificial intelligence systems
+      ref: Dz.U. 2026 poz. 1003
+      in_force_from: 2026-08-11
+      url: "https://api.sejm.gov.pl/eli/acts/DU/2026/1003"
+      notes: Enforcement chapters apply from 28 Oct 2026.
+    single_point_of_contact: {name: Commission on Development and Safety of AI (KRiBSI), status: designated}
+    market_surveillance_authorities:
+      - {name: Commission on Development and Safety of AI (KRiBSI), scope: default, status: designated}
+    notifying_authorities:
+      - {name: Minister of Digital Affairs, status: designated}
+    penalties: {status: national_rules, notes: Enforcement chapters from 28 Oct 2026; amounts not recorded yet.}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [aiactguide, fli]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [FLI (Jun 2026) listed the bill as awaiting the Senate; superseded by publication in Dz.U.]
+
+  - iso2: PT
+    name: Portugal
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: none}
+    single_point_of_contact: {name: National Communications Authority (ANACOM), status: proposed}
+    market_surveillance_authorities:
+      - {name: National Communications Authority (ANACOM), scope: announced Sept 2025, status: proposed}
+    notifying_authorities: []
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  - iso2: RO
+    name: Romania
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: draft, name: Government memorandum (March 2026)}
+    single_point_of_contact: {name: National Authority for Management and Regulation in Communications (ANCOM), status: proposed}
+    market_surveillance_authorities:
+      - {name: ANCOM, scope: main authority, status: proposed}
+    notifying_authorities:
+      - {name: Authority for the Digitalisation of Romania (ADR), status: proposed}
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  - iso2: SK
+    name: Slovakia
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: draft, name: Draft legislation (slov-lex 2026/17)}
+    single_point_of_contact: {name: Office for Digital Integrity, status: proposed}
+    market_surveillance_authorities:
+      - {name: Office for Digital Integrity, scope: main authority, status: proposed}
+      - {name: Office for Personal Data Protection, scope: sectoral, status: proposed}
+      - {name: Ministry of Justice, scope: sectoral, status: proposed}
+    notifying_authorities:
+      - {name: "Office for Standardisation, Metrology and Testing (ÚNMS)", status: proposed}
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: low
+    open_questions: ['Commission list names MIRRI (Ministry of Investments, Regional Development and Informatization) without a "pending" mark; FLI names the Office for Digital Integrity.']
+
+  - iso2: SI
+    name: Slovenia
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: in_force, name: National AI Act implementing law (pisrs ZAKO9225), notes: In force since Nov 2025.}
+    single_point_of_contact: {name: Agency for Communication Networks and Services (AKOS), status: designated}
+    market_surveillance_authorities:
+      - {name: Agency for Communication Networks and Services (AKOS), scope: main authority; other authorities also take part, status: designated}
+    notifying_authorities:
+      - {name: "Five authorities depending on system type, incl. Ministry of the Economy, Ministry for the Information Society, Ministry of Infrastructure", status: designated}
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [Exact in-force date not recorded.]
+
+  - iso2: ES
+    name: Spain
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law:
+      status: lapsed
+      name: Proyecto de Ley Orgánica para el buen uso y la gobernanza de la inteligencia artificial (121/000096)
+      url: "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-20742"
+      notes: >-
+        Approved by the Council of Ministers on 26 May 2026; lapsed on 6 Oct 2026 when the Cortes
+        were dissolved (RD 806/2026). Elections 29 Nov 2026. No national penalties in force.
+    single_point_of_contact: {name: Spanish AI Supervisory Agency (AESIA), status: unclear}
+    market_surveillance_authorities:
+      - {name: Spanish AI Supervisory Agency (AESIA), scope: exists since 2023 (RD 729/2023) but has no AI Act designation in law, status: unclear}
+    notifying_authorities: []
+    penalties: {status: none, notes: The lapsed bill would have set national fine tiers; it has no legal effect.}
+    sandbox: {status: none, notes: The RD 817/2023 pilot sandbox has concluded.}
+    national_extras: null
+    sources: [aiactguide, fli]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [Commission list shows AESIA as SPOC "pending final adoption". Re-check after the new Cortes convene (23 Dec 2026).]
+
+  - iso2: SE
+    name: Sweden
+    membership: EU
+    ai_act_binding: true
+    coverage_tier: profile_only
+    national_law: {status: draft, name: Government inquiry proposal SOU 2025:101}
+    single_point_of_contact: {name: Swedish Post and Telecom Authority (PTS), status: proposed}
+    market_surveillance_authorities:
+      - {name: Swedish Post and Telecom Authority (PTS), scope: coordinating, status: proposed}
+      - {name: Swedish Medical Products Agency (Läkemedelsverket), scope: medical, status: proposed}
+    notifying_authorities:
+      - {name: Swedish Board for Accreditation and Conformity Assessment (Swedac), status: proposed}
+      - {name: Swedish Medical Products Agency (Läkemedelsverket), status: proposed}
+    penalties: {status: unknown}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  # --- EEA EFTA states: AI Act not binding until incorporated into the EEA Agreement -----------
+
+  - iso2: "NO"
+    name: Norway
+    membership: EEA
+    ai_act_binding: false
+    coverage_tier: profile_only
+    national_law:
+      status: draft
+      name: Norwegian AI act (KI-lov)
+      notes: >-
+        New consultation in autumn 2026; consultation on the Omnibus changes until 11 Dec 2026;
+        bill targeted for spring 2027. The AI Act is not yet incorporated into the EEA Agreement.
+    single_point_of_contact: {name: Norwegian Communications Authority (Nkom), status: proposed}
+    market_surveillance_authorities:
+      - {name: Norwegian Communications Authority (Nkom), scope: national coordinating supervisory authority, status: proposed}
+    notifying_authorities: []
+    penalties: {status: none}
+    sandbox: {status: unknown}
+    national_extras: "\"KI-Norge\" (AI Norway) sits in the Norwegian Digitalisation Agency (Digdir). Norsk akkreditering will handle technical accreditation."
+    sources: [research, fli]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: [FLI (Jun 2026) expected the law in summer 2026; research of 18 Nov 2026 says the bill is targeted for spring 2027 (newer kept).]
+
+  - iso2: IS
+    name: Iceland
+    membership: EEA
+    ai_act_binding: false
+    coverage_tier: profile_only
+    national_law: {status: none}
+    single_point_of_contact: null
+    market_surveillance_authorities: []
+    notifying_authorities: []
+    penalties: {status: none}
+    sandbox: {status: unknown}
+    national_extras: null
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
+
+  - iso2: LI
+    name: Liechtenstein
+    membership: EEA
+    ai_act_binding: false
+    coverage_tier: profile_only
+    national_law: {status: none}
+    single_point_of_contact: null
+    market_surveillance_authorities: []
+    notifying_authorities: []
+    penalties: {status: none}
+    sandbox: {status: unknown}
+    national_extras: The Office for Financial Market Innovation and Digitalisation represents Liechtenstein at the AI Board.
+    sources: [fli, aiactguide]
+    last_verified: 2026-11-19
+    confidence: medium
+    open_questions: []
