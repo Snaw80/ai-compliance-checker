@@ -235,6 +235,22 @@ def search(query: str, k: int = 8, mode: Mode = "hybrid", exact_refs: bool = Tru
             conn.close()
 
 
+def get_chunks(chunk_ids: list[str], conn: psycopg.Connection | None = None) -> list[Hit]:
+    """Chunks by id, in the given order (unknown ids are skipped)."""
+    if not chunk_ids:
+        return []
+    own = conn is None
+    conn = conn or connect()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"select {_COLS} from chunks where chunk_id = any(%s)", (list(chunk_ids),))
+            rows = {r[0]: r for r in cur.fetchall()}
+        return [Hit(*rows[c], via=["id"]) for c in chunk_ids if c in rows]
+    finally:
+        if own:
+            conn.close()
+
+
 if __name__ == "__main__":
     import argparse
 
