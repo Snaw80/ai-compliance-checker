@@ -186,3 +186,61 @@
   question: What is the corporate tax rate in Finland?
   gold: []
   answer: Out of scope - the assistant only covers the AI Act and should say so.
+
+# --- Company cases (day 4). `clarify`: the user's reply(ies), in order, if the agent asks a
+# clarifying question. The baseline never asks; it gets only `question`.
+
+- id: q31
+  type: company_case
+  question: We're a startup with offices in Oslo and Helsinki. We use a chatbot on our website to answer customer questions. What do we need to do?
+  clarify: [We built it ourselves on top of an LLM API, and it runs under our brand.]
+  gold: [Art. 50(1)]
+  answer: >-
+    Limited risk (transparency). As provider, tell users they are interacting with an AI system
+    (Art. 50(1)), applicable since 2 August 2026; AI literacy (Art. 4) already applies. Finland:
+    AI Act applies directly, Traficom is the contact point / transparency supervisor. Norway: the
+    AI Act is not binding yet (EEA), but it applies to the service offered to EU users.
+
+- id: q32
+  type: company_case
+  question: We're a 20-person company in Berlin. We bought a CV-screening tool from a vendor that ranks job applicants. What do we have to do?
+  clarify: [It is used for our own hiring in Germany.]
+  gold: [Art. 26 | Annex III point 4]
+  answer: >-
+    High-risk (Annex III point 4, employment). As deployer: Art. 26 duties (use per instructions,
+    human oversight, monitor, keep logs, inform workers' representatives and affected workers),
+    applicable from 2 December 2027 (postponed by the Omnibus). AI literacy (Art. 4) already
+    applies. Germany: KI-MIG in force, Bundesnetzagentur is the contact point.
+
+- id: q33
+  type: company_case
+  question: We're a marketing agency in Lyon. We built a tool that generates product images for our clients' ads. Which AI Act rules apply?
+  clarify: [We built it ourselves and our clients use it under our brand.]
+  gold: [Art. 50(2)]
+  answer: >-
+    Transparency obligations. As provider of a system generating synthetic images, mark outputs in
+    a machine-readable, detectable way (Art. 50(2)), applicable since 2 August 2026; systems on the
+    market before 2 August 2026 have until 2 December 2026. Deepfake disclosure (Art. 50(4)) is on
+    whoever publishes realistic deepfakes. AI literacy applies.
+
+- id: q34
+  type: company_case
+  question: Our startup in Milan sells software that detects employees' emotions from webcam video during work calls. Is that allowed?
+  clarify: [We built it ourselves and sell it to employers.]
+  gold: [Art. 5(1)(f)]
+  answer: >-
+    Prohibited practice: AI that infers emotions of people in the workplace is banned (Art. 5(1)(f))
+    since 2 February 2025, except for medical or safety reasons.
+
+- id: q35
+  type: company_case
+  question: We use AI for customer support. What do we need to do?
+  clarify:
+    - We use a ready-made chatbot from a vendor, as is. We're based in Spain and our customers are in Spain and Portugal.
+    - It answers customer questions in a chat window on our website.
+  gold: [Art. 50(1) | Art. 4 | Art. 26]
+  answer: >-
+    As deployer of a ready-made chatbot: the disclosure that users talk to an AI (Art. 50(1)) is the
+    vendor's (provider's) duty, applicable since 2 August 2026; offering it under your own name can
+    make you the provider. AI literacy (Art. 4) applies to deployers. Spain and Portugal are EU
+    members, so the AI Act applies directly.
