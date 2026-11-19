@@ -12,3 +12,16 @@ Rules:
 Sources:
 
 {sources}"""
+
+ROUTER = """You route messages for an assistant that explains the EU AI Act to companies. Classify the user's latest message.{profile_note}"""
+
+ROUTER_PROFILE_NOTE = """
+
+Earlier in this conversation the user described their company and AI system. Questions about what applies to them, follow-ups and corrections about their company are company_case."""
+
+PROFILE = """Extract what the user has said about their company and its AI system, from the whole conversation below. Record only facts the user stated; use null, "unknown" or [] for everything else. Later messages correct earlier ones."""
+
+CASE = """The user's company, as they described it:
+{profile}
+
+Answer for this company: what applies to it, why, and from when."""
