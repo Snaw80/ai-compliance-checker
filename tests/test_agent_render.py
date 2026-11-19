@@ -1,8 +1,12 @@
 """Citation check + rendering (no model, no database)."""
 
+from datetime import date
+
+from aiact.agent.evidence import compact_articles, country_text
 from aiact.agent.llm import _destringify
-from aiact.agent.render import DISCLAIMER, dates_in, render, split_tags, verify
+from aiact.agent.render import DISCLAIMER, country_section, dates_in, render, split_tags, verify, when_section
 from aiact.agent.schemas import Answer, Source
+from aiact.tables import get_country_profile, lookup_applicability
 
 SOURCES = [
     Source(tag="S1", kind="chunk", label="AI Act, Art. 50(1)", url="https://x/art50",
@@ -42,8 +46,9 @@ def test_render_numbers_sources_in_citation_order():
     a = Answer(summary="Yes [S1].", risk_tier="transparency",
                points=["Dates [T1]", "Tell users [S1]", "Unsourced"], caveats=["Check the guidelines [S1]."])
     points, v = verify(a, SOURCES)
-    md, cited = render(a, points, SOURCES, v, sections=["**When**\nx"], caveats=["Assumed provider."])
+    md, cited = render(a, points, SOURCES, v, sections=["**When**\nrow [T1][XX]"], caveats=["Assumed provider."])
     assert [s.tag for s in cited] == ["T1", "S1"]
+    assert "row [1][XX]" in md  # section tags become footnotes too; unknown ones stay as text
     assert "- Dates [1]" in md and "- Tell users [2]" in md and "_(no source found)_" in md
     assert md.startswith("Yes.") and "limited risk" in md
     assert md.index("**When**") < md.index("**Caveats**") < md.index("**Sources**")
@@ -56,3 +61,28 @@ def test_destringify_repairs_qwen_tool_args():
     assert _destringify({"points": broken, "s": "[not json"}) == {
         "points": [{"text": "a", "n": [1]}, {"text": "b", "n": [2]}], "s": "[not json"}
     assert _destringify({"points": '["x [S1]", "y [T1]"]'}) == {"points": ["x [S1]", "y [T1]"]}
+
+
+def test_compact_articles():
+    assert compact_articles(("Art. 6", "Art. 7", "Art. 8", "Art. 50(1)", "Art. 51", "Annex III")) == \
+        "Art. 6-8, Art. 50(1), Art. 51, Annex III"
+
+
+def test_when_section_dates_and_grace_period():
+    on = date(2026, 11, 19)
+    rows = lookup_applicability("art50-content-marking", on=on) + lookup_applicability("high-risk-annex-iii", on=on)
+    md = when_section(rows, {"art50-content-marking": "T1", "high-risk-annex-iii": "T2"},
+                      {"art50-content-marking": "you generate images"})
+    assert "| you generate images | 2 Aug 2026 | applies |" in md
+    assert "(Art. 6-27, Annex III) [T2] | provider, deployer" in md and "| 2 Dec 2027 | not yet (in 378 days) |" in md
+    assert "Deadline: 2 December 2026 [T1]" in md
+    assert "2030" not in md  # transitions of rows that don't apply yet are left out
+
+
+def test_country_section_and_text():
+    md = country_section(["FI", "NO"])
+    assert "- **Finland**: AI Act applies directly. National AI law: in force: Act on the Supervision" in md
+    assert "Traficom is not the authority for every question" in md and md.rstrip().endswith("[NO]")
+    assert "AI Act not binding yet (EEA)" in md and "Nkom) (proposed)" in md
+    text = country_text(get_country_profile("NO"))
+    assert "not binding here until it is incorporated into the EEA Agreement" in text and ".." not in text

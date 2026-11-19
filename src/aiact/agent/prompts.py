@@ -8,6 +8,7 @@ Rules:
 3. Dates: write a date only if it appears in a source. "From when" comes from the T sources when there are any.
 4. If the sources do not answer the question, say so in the summary and in the caveats. Do not guess.
 5. Plain English, short. Name articles like "Art. 50(1)". Do not add a legal-advice disclaimer (it is added automatically).
+6. Caveats: at most 2, only real uncertainty that changes the answer. Do not list things the user simply did not mention.
 
 Sources:
 
@@ -23,5 +24,9 @@ PROFILE = """Extract what the user has said about their company and its AI syste
 
 CASE = """The user's company, as they described it:
 {profile}
+- Probable risk category (from the facts above): {risk_tier}
 
-Answer for this company: what applies to it, why, and from when."""
+Obligations the applicability table lists for this company (check each one against the sources):
+{obligations}
+
+Answer for this company: what it must do and why, and from when (T sources). If it is a deployer, say which duties are on its vendor (the provider). Include what differs by country from the country sources, if any."""

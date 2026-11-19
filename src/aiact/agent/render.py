@@ -9,8 +9,11 @@ from __future__ import annotations
 
 import calendar
 import re
+from datetime import date
 
+from aiact.agent.evidence import compact_articles, fmt_date
 from aiact.agent.schemas import Answer, Point, Source, Verification
+from aiact.tables import Applicability, get_country_profile
 
 DISCLAIMER = "_General information about the EU AI Act, not legal advice._"
 OFF_TOPIC = ("I can only help with the EU AI Act: which rules apply to an AI system, in which "
@@ -126,7 +129,13 @@ def render(answer: Answer, points: list[Point], sources: list[Source],
             refs = "".join(ref(t) for t in p.sources if t in by_tag)
             lines.append(f"- {p.text.strip()} {refs}".rstrip() + ("" if refs else " _(no source found)_"))
         out.append("\n".join(lines))
-    out += [s for s in sections if s]
+    def refs_in(section: str) -> str:
+        def sub(m: re.Match) -> str:
+            tags = [t.strip() for t in re.split(r"[,;]", m[1]) if t.strip() in by_tag]
+            return "".join(ref(t) for t in tags) or m[0]
+        return _TAGS.sub(sub, section)
+
+    out += [refs_in(s) for s in sections if s]
     all_caveats = [*caveats, *(split_tags(c)[0] for c in answer.caveats)]
     if verification and verification.unverified_dates:
         all_caveats.append("These dates in the answer are not in the sources, so check them: "
@@ -138,3 +147,63 @@ def render(answer: Answer, points: list[Point], sources: list[Source],
             f"{i}. [{s.label}]({s.url})" if s.url else f"{i}. {s.label}" for i, s in enumerate(cited, 1)))
     out.append(DISCLAIMER)
     return "\n\n".join(out), cited
+
+
+# ---------------------------------------------------------------------------
+# Code-built sections (dates and countries never come from the model)
+# ---------------------------------------------------------------------------
+
+def _short_date(d: date) -> str:
+    return f"{d.day} {d:%b %Y}"
+
+
+def when_section(rows: list[Applicability], tags: dict[str, str], reasons: dict[str, str] | None = None) -> str:
+    """Table of obligation rows with their date and status today. `tags`: obligation id -> T tag;
+    `reasons` (company cases): obligation id -> why it concerns the company."""
+    if not rows:
+        return ""
+    on = rows[0].on
+    head = ("| Obligation | Why it concerns you | Applies from | Status today |" if reasons else
+            "| Obligation | Addressed to | Applies from | Status today |")
+    lines = [f"**When it applies** (same date in every EU country; status as of {fmt_date(on)})", "",
+             head, "|---|---|---|---|"]
+    notes = []
+    for a in rows:
+        o = a.obligation
+        arts = compact_articles(o.articles) or "other articles"
+        status = {"applicable": "applies",
+                  "not_yet_applicable": f"not yet (in {a.days_until} days)",
+                  "not_binding": "not binding"}[a.status]
+        roles = ", ".join(r.replace("_", " ") for r in o.roles)
+        who = (reasons or {}).get(o.id) or roles
+        lines.append(f"| {o.obligation} ({arts}) [{tags[o.id]}] | {who} | {_short_date(a.applies_from)} | {status} |")
+        if a.status != "applicable":
+            continue  # transitions of rows that don't apply yet are years away: noise here
+        for t in a.transitions:
+            if t.get("status") == "running":
+                notes.append(f"- Grace period: {t['applies_to']}: {t['effect']} Deadline: "
+                             f"{fmt_date(t['deadline'])} [{tags[o.id]}]")
+    return "\n".join(lines + ([""] + notes if notes else []))
+
+
+def country_section(isos: list[str]) -> str:
+    """One line per country: binding or not, national law, contact point, key caveat."""
+    if not isos:
+        return ""
+    lines = ["**Country specifics**"]
+    for iso in isos:
+        c = get_country_profile(iso)
+        law = c["national_law"]
+        law_s = {"in_force": "in force", "adopted": "adopted", "bill": "bill in parliament",
+                 "draft": "draft", "lapsed": "lapsed", "none": "none yet", "unknown": "unknown"}[law["status"]]
+        if law.get("name"):
+            law_s += f": {law['name']}" + (f" ({law['ref']})" if law.get("ref") else "")
+        spoc = c.get("single_point_of_contact")
+        spoc_s = (spoc["name"] + ("" if spoc["status"] == "designated" else f" ({spoc['status']})")) if spoc \
+            else "not designated yet"
+        binding = "AI Act applies directly" if c["ai_act_binding"] else (
+            "AI Act not binding yet (EEA); it still applies to what you place on the market or use in the EU")
+        extra = f" {c['national_extras'].rstrip('.')}." if c.get("national_extras") else ""
+        lines.append(f"- **{c['name']}**: {binding}. National AI law: {law_s}. Contact point: {spoc_s}.{extra} "
+                     f"_(last verified {fmt_date(c['last_verified'])}, {c['confidence']} confidence)_ [{iso}]")
+    return "\n".join(lines)
