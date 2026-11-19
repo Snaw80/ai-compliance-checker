@@ -16,8 +16,8 @@ CHATBOT = "chatbot answering customer questions"
 class FakeModel:
     """Returns scripted outputs per schema, records the calls."""
 
-    def __init__(self, intent="company_case", profiles=()):
-        self.intent, self.profiles, self.calls = intent, list(profiles), []
+    def __init__(self, intent="company_case", profiles=(), points=("Disclose the chatbot [S1]",)):
+        self.intent, self.profiles, self.points, self.calls = intent, list(profiles), list(points), []
 
     def __call__(self, schema, messages, **kw):
         self.calls.append((schema.__name__, messages))
@@ -26,7 +26,7 @@ class FakeModel:
         if schema is CompanyProfile:
             return self.profiles.pop(0) if len(self.profiles) > 1 else self.profiles[0]
         if schema is Answer:
-            return Answer(summary="Tell users it is AI.", points=["Disclose the chatbot [S1]"])
+            return Answer(summary="Tell users it is AI.", points=self.points)
         raise AssertionError(schema)
 
 
@@ -56,7 +56,7 @@ def test_off_topic_skips_research(fake):
 
 
 def test_general_question_goes_straight_to_research(fake):
-    model = fake(intent="general")
+    model = fake(intent="general", points=["Disclose the chatbot [S1]", "From 2 August 2026 [T1]"])
     r = agent_graph.Conversation(TODAY).send("What does Art. 50(1) say?")
     assert names(model) == ["Route", "Answer"]
     assert "Disclose the chatbot [1]" in r["output"] and "AI Act, Art. 50(1)" in r["output"]
@@ -66,19 +66,25 @@ def test_general_question_goes_straight_to_research(fake):
     assert "Probable risk category" not in r["output"]
 
 
+def test_general_question_shows_only_the_table_rows_the_answer_cites(fake):
+    fake(intent="general")  # the answer cites no T source
+    r = agent_graph.Conversation(TODAY).send("What does Art. 50(1) say?")
+    assert "When it applies" not in r["output"]
+
+
 def test_company_case_asks_build_or_buy_then_resumes(fake):
     model = fake(profiles=[CompanyProfile(system_description=CHATBOT, interacts_with_people=True),
                            CompanyProfile(system_description=CHATBOT, interacts_with_people=True,
                                           built_or_bought="built")])
     c = agent_graph.Conversation(TODAY)
     r = c.send("We use a chatbot on our website. What do we need to do?")
-    assert "build the chatbot" in r["question"] and c.waiting
+    assert "build this AI system (chatbot answering" in r["question"] and c.waiting
     r = c.send("We built it on top of an LLM API.")
     assert not c.waiting and "Disclose the chatbot" in r["output"]
     assert names(model) == ["Route", "CompanyProfile", "CompanyProfile", "Answer"]
     # the second profile extraction saw our question and the user's reply
     convo = model.calls[2][1]
-    assert any("build the chatbot" in text for role, text in convo if role == "assistant")
+    assert any("build this AI system" in text for role, text in convo if role == "assistant")
     assert convo[-1] == ("user", "We built it on top of an LLM API.")
     assert r["state"]["profile"].built_or_bought == "built"
     assert [o["id"] for o in r["state"]["obligations"]] == ["art50-chatbot-disclosure", "ai-literacy"]
@@ -89,15 +95,22 @@ def test_company_case_asks_build_or_buy_then_resumes(fake):
     assert "[T1] art50-chatbot-disclosure" in writer_prompt and "[T2] ai-literacy" in writer_prompt
 
 
-def test_clarify_stops_after_max_rounds_and_says_so(fake):
+def test_clarify_never_repeats_a_question_and_says_so(fake):
     fake(profiles=[CompanyProfile(system_description=CHATBOT)])  # never learns the role
     c = agent_graph.Conversation(TODAY)
     r = c.send("We use a chatbot.")
-    for _ in range(rules.MAX_CLARIFY - 1):
-        r = c.send("Not sure.")
-        assert "question" in r
-    r = c.send("Still not sure.")
+    assert "build this AI system" in r["question"]
+    r = c.send("Not sure.")  # the role question is not asked a second time
     assert "output" in r and "covers both the provider's and the deployer's" in r["output"]
+
+
+def test_clarify_asks_each_missing_topic_once(fake):
+    fake(profiles=[CompanyProfile(), CompanyProfile(system_description=CHATBOT)])
+    c = agent_graph.Conversation(TODAY)
+    assert "What does your AI system do" in c.send("What do we need to do?")["question"]
+    assert "build this AI system" in c.send("A chatbot for customers.")["question"]
+    assert "output" in c.send("No idea.")
+    assert rules.MAX_CLARIFY == 2
 
 
 def test_company_countries_get_profile_sources_and_section(fake):
@@ -134,9 +147,10 @@ def test_role(built, role):
 def test_clarify_question_order():
     assert "What does your AI system do" in rules.clarify_question(CompanyProfile())
     # a known fact about the system is enough to skip "what does it do"
-    assert "build the AI system" in rules.clarify_question(CompanyProfile(interacts_with_people=True))
-    assert "build the chatbot" in rules.clarify_question(CompanyProfile(system_description="Chatbot"))
+    assert "build this AI system itself" in rules.clarify_question(CompanyProfile(interacts_with_people=True))
+    assert "build this AI system (chatbot) itself" in rules.clarify_question(CompanyProfile(system_description="Chatbot"))
     assert rules.clarify_question(CompanyProfile(system_description="Chatbot", built_or_bought="bought")) is None
+    assert rules.clarify_question(CompanyProfile(system_description="Chatbot"), asked=["role"]) is None
 
 
 def test_profile_summary():
@@ -201,3 +215,23 @@ def test_countries_in_text():
     assert rules.countries_in_text("Who supervises AI in the Netherlands and Finland? Is it Traficom?") == [
         "Netherlands", "Finland"]
     assert rules.countries_in_text("No, it is not in scope") == []  # ISO codes are not matched
+
+
+def test_core_law_follows_the_role():
+    deployer = CompanyProfile(system_description="CV screening", built_or_bought="bought", high_risk_area="employment")
+    ids = rules.core_chunks("high-risk-annex-iii", deployer)
+    assert "eu-ai-act-consolidated:art_26:1" in ids and "eu-ai-act-consolidated:art_27:1" in ids
+    assert "eu-ai-act-consolidated:art_16" not in ids
+    provider = deployer.model_copy(update={"built_or_bought": "built"})
+    assert rules.core_chunks("high-risk-annex-iii", provider) == ["eu-ai-act-consolidated:art_16"]
+    unknown = deployer.model_copy(update={"built_or_bought": "unknown"})
+    assert len(rules.core_chunks("high-risk-annex-iii", unknown)) == 5
+    assert rules.core_chunks("art50-chatbot-disclosure", deployer) == []
+
+
+def test_prohibited_practice_covers_only_the_ban():
+    p = CompanyProfile(system_description="detects employees' emotions", built_or_bought="built",
+                       emotion_or_biometric=True, high_risk_area="employment", interacts_with_people=True)
+    obligations, _ = rules.obligations_for_profile(p)
+    assert [o["id"] for o in obligations] == ["prohibited-practices", "ai-literacy"]
+    assert rules.risk_tier(p) == "prohibited"

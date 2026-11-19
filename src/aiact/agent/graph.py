@@ -51,6 +51,7 @@ class State(TypedDict, total=False):
     question: str                  # the user message that started this turn
     intent: Intent
     clarify_rounds: int
+    clarify_asked: list[str]       # clarify topics asked this turn ('system', 'role')
     obligations: list[dict]        # [{id, reason}] rows of tables/applicability.yaml
     countries: list[str]           # ISO2, EU/EEA only
     plan_caveats: list[str]        # code-made caveats (assumptions, countries outside the EEA)
@@ -74,7 +75,7 @@ def router(state: State) -> dict:
     route = llm.structured(Route, [("system", prompts.ROUTER.format(profile_note=note)),
                                    *[(_role(m), _clip(m.content)) for m in recent]])
     log.info("intent: %s", route.intent)
-    return {"question": question, "intent": route.intent, "clarify_rounds": 0, "obligations": [],
+    return {"question": question, "intent": route.intent, "clarify_rounds": 0, "clarify_asked": [], "obligations": [],
             "countries": [], "plan_caveats": [], "sources": [], "answer": None,
             "verification": None, "cited": [], "output": ""}
 
@@ -89,10 +90,12 @@ def build_profile(state: State) -> dict:
 
 
 def ask_clarify(state: State) -> dict:
-    question = rules.clarify_question(state["profile"])
+    asked = state.get("clarify_asked", [])
+    topic = rules.clarify_topic(state["profile"], asked)
+    question = rules.clarify_question(state["profile"], asked)
     reply = interrupt({"question": question})  # pauses the graph; resumed with the user's reply
     return {"messages": [AIMessage(question, name=CLARIFY), HumanMessage(str(reply))],
-            "clarify_rounds": state.get("clarify_rounds", 0) + 1}
+            "clarify_rounds": state.get("clarify_rounds", 0) + 1, "clarify_asked": [*asked, topic]}
 
 
 def plan(state: State) -> dict:
@@ -127,9 +130,13 @@ def research(state: State) -> dict:
         retrieved = [h.article_ref for h in hits if h.doc_id == LAW_DOC][:3]
         obligations = rules.obligations_for_refs(query_refs(question), retrieved)
     rows = applicability(obligations, state["today"])
-    # the law each obligation row cites first, then the search hits
-    pool = get_chunks([c for a in rows for c in a.obligation.source_chunk_ids if not is_date_chunk(c)])
-    pool += hits
+    # company case: the law of each selected obligation first, then the search hits;
+    # general question: the hits first (the row's law must not crowd out e.g. the recital that answers it)
+    ids = [c for a in rows for c in a.obligation.source_chunk_ids if not is_date_chunk(c)]
+    if case:  # the core duties for the company's role (e.g. Art. 26 for a deployer of a high-risk system)
+        ids = [c for o in obligations for c in rules.core_chunks(o["id"], state["profile"])] + ids
+    law = get_chunks(ids)
+    pool = law + hits if case else hits + law
     if case:
         for a in rows:
             pool += search(a.obligation.obligation, k=K_OBLIGATION)
@@ -160,11 +167,14 @@ def finalize(state: State) -> dict:
     if state["intent"] == "off_topic":
         return {"output": OFF_TOPIC, "messages": [AIMessage(OFF_TOPIC)]}
     case = state["intent"] == "company_case"
-    rows = applicability(state["obligations"], state["today"])
-    reasons = {o["id"]: o["reason"] for o in state["obligations"]} if case else None
-    sections = [when_section(rows, table_tags(state["obligations"]), reasons),
-                country_section(state["countries"])]
     points, v = verify(state["answer"], state["sources"])
+    tags = table_tags(state["obligations"])
+    rows = applicability(state["obligations"], state["today"])
+    if not case:  # general question: only the rows the answer relies on (the rest were just retrieved)
+        used = {t for p in points for t in p.sources}
+        rows = [a for a in rows if tags[a.obligation.id] in used]
+    reasons = {o["id"]: o["reason"] for o in state["obligations"]} if case else None
+    sections = [when_section(rows, tags, reasons), country_section(state["countries"])]
     output, cited = render.render(state["answer"], points, state["sources"], v,
                            sections=sections, caveats=state.get("plan_caveats", []))
     return {"output": output, "verification": v, "cited": cited, "messages": [AIMessage(output)]}
@@ -189,7 +199,8 @@ def after_router(state: State) -> str:
 
 
 def after_profile(state: State) -> str:
-    if rules.clarify_question(state["profile"]) and state.get("clarify_rounds", 0) < rules.MAX_CLARIFY:
+    if (rules.clarify_topic(state["profile"], state.get("clarify_asked", []))
+            and state.get("clarify_rounds", 0) < rules.MAX_CLARIFY):
         return "ask_clarify"
     return "plan"
 

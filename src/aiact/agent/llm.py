@@ -28,6 +28,10 @@ log = logging.getLogger("aiact.agent")
 FAST_MODEL = os.environ.get("AIACT_FAST_MODEL", "qwen3.5:9b")      # router, profile
 WRITER_MODEL = os.environ.get("AIACT_WRITER_MODEL", "qwen3.5:9b")  # final answer
 NUM_CTX = int(os.environ.get("AIACT_NUM_CTX", "16384"))
+# Seconds per call. Writer calls take ~40-70 s; without a timeout a wedged Ollama runner
+# blocks forever (seen in the day-4 eval: one request hung for over an hour).
+TIMEOUT = float(os.environ.get("AIACT_LLM_TIMEOUT", "300"))
+MAX_TOKENS = 2048  # longest real answer is ~1k tokens; caps runaway (repeating) generations
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -40,7 +44,8 @@ class LLMError(RuntimeError):
 def chat(model: str) -> ChatOllama:
     # temperature 0 overrides the Modelfile default (1.0) so eval runs are repeatable.
     return ChatOllama(model=model, base_url=OLLAMA_URL, reasoning=False, num_ctx=NUM_CTX,
-                      temperature=0, keep_alive="30m")
+                      temperature=0, num_predict=MAX_TOKENS, keep_alive="30m",
+                      client_kwargs={"timeout": TIMEOUT})
 
 
 def _destringify(x):
@@ -48,7 +53,9 @@ def _destringify(x):
     if isinstance(x, dict):
         return {k: _destringify(v) for k, v in x.items()}
     if isinstance(x, list):
-        return [_destringify(v) for v in x]
+        # qwen sometimes nests one item one level too deep: ['a', ['b']] -> ['a', 'b']
+        flat = [w for v in x for w in (v if isinstance(v, list) else [v])]
+        return [_destringify(v) for v in flat]
     if isinstance(x, str) and x.strip()[:1] in ("[", "{"):
         try:
             return _destringify(json.loads(x))
@@ -82,10 +89,12 @@ def structured(schema: type[T], messages: list[AnyMessage] | list[tuple[str, str
     nested fields before validation.
     """
     bound = chat(model).bind_tools([schema])
+    nudge = ("user", f"Reply only by calling the {schema.__name__} tool.")
     error: Exception | None = None
     for attempt in range(retries + 1):
         t = time.perf_counter()
-        msg = bound.invoke(messages)
+        # at temperature 0 the same request gives the same output: nudge the retry
+        msg = bound.invoke(list(messages) + ([nudge] if attempt else []))
         log.info("%s via %s: %.1fs (attempt %d)", schema.__name__, model,
                  time.perf_counter() - t, attempt + 1)
         calls = [c for c in msg.tool_calls if c["name"] == schema.__name__]
@@ -93,7 +102,21 @@ def structured(schema: type[T], messages: list[AnyMessage] | list[tuple[str, str
             error = LLMError(f"no {schema.__name__} tool call; got: {str(msg.content)[:200]!r}")
             continue
         try:
-            return schema.model_validate(_destringify(calls[0]["args"]))
+            return _validate(schema, _destringify(calls[0]["args"]))
         except ValidationError as e:
             error = e
-    raise LLMError(f"{schema.__name__}: no valid output from {model}") from error
+    raise LLMError(f"{schema.__name__}: no valid output from {model}: {str(error)[:300]}") from error
+
+
+def _validate(schema: type[T], args: dict) -> T:
+    """Validate; if some optional fields are invalid (a null list, a value outside a Literal),
+    drop them so they take their default ('unknown', []) rather than losing the whole output."""
+    try:
+        return schema.model_validate(args)
+    except ValidationError as e:
+        bad = {err["loc"][0] for err in e.errors() if err["loc"]}
+        required = {n for n, f in schema.model_fields.items() if f.is_required()}
+        if not bad or bad & required or not isinstance(args, dict):
+            raise
+        log.warning("%s: dropped invalid fields %s", schema.__name__, sorted(bad))
+        return schema.model_validate({k: v for k, v in args.items() if k not in bad})

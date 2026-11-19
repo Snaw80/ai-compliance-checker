@@ -2,10 +2,13 @@
 
 from datetime import date
 
+import pytest
+from pydantic import ValidationError
+
 from aiact.agent.evidence import compact_articles, country_text
-from aiact.agent.llm import _destringify
+from aiact.agent.llm import _destringify, _validate
 from aiact.agent.render import DISCLAIMER, country_section, dates_in, render, split_tags, verify, when_section
-from aiact.agent.schemas import Answer, Source
+from aiact.agent.schemas import Answer, CompanyProfile, Source
 from aiact.tables import get_country_profile, lookup_applicability
 
 SOURCES = [
@@ -61,6 +64,19 @@ def test_destringify_repairs_qwen_tool_args():
     assert _destringify({"points": broken, "s": "[not json"}) == {
         "points": [{"text": "a", "n": [1]}, {"text": "b", "n": [2]}], "s": "[not json"}
     assert _destringify({"points": '["x [S1]", "y [T1]"]'}) == {"points": ["x [S1]", "y [T1]"]}
+
+
+def test_repairs_seen_in_the_eval():
+    # q07/q11: one caveat nested one level too deep
+    a = _validate(Answer, _destringify({"summary": "s", "points": ["p [S1]"], "caveats": ["a", ["b", "c"]]}))
+    assert a.caveats == ["a", "b", "c"]
+    # q15: null lists; q24: value outside the Literal -> defaults
+    p = _validate(CompanyProfile, {"system_description": "x", "countries_established": None,
+                                   "countries_users": None, "high_risk_area": "finance"})
+    assert (p.system_description, p.countries_established, p.high_risk_area) == ("x", [], "unknown")
+    # a required field is never silently dropped
+    with pytest.raises(ValidationError):
+        _validate(Answer, {"summary": "s", "points": None})
 
 
 def test_compact_articles():

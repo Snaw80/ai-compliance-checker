@@ -83,7 +83,8 @@ class CompanyProfile(BaseModel):
             "mention any AI system."))
     built_or_bought: Literal["built", "bought", "both", "unknown"] = Field(
         default="unknown", description=(
-            "built = the company developed the AI system, or offers it under its own name or brand "
+            "built = the company developed or is developing the AI system ('we build', 'we are building', "
+            "'we developed'), or offers it under its own name or brand "
             "(including a product built on top of another company's AI model or API); "
             "bought = it uses a ready-made AI product from another company as is; "
             "unknown = the user did not say which. Using a chatbot on your website does NOT say "

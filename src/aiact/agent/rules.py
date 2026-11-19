@@ -14,7 +14,7 @@ from aiact.agent.schemas import CompanyProfile, RiskTier
 from aiact.tables import TableError, get_country_profile, load_countries, lookup_applicability
 
 Role = Literal["provider", "deployer", "both", "unknown"]
-MAX_CLARIFY = 2  # clarifying rounds per turn; after that, assume and say so
+MAX_CLARIFY = 2  # clarifying rounds per turn (each topic at most once); after that, assume and say so
 
 
 def role(p: CompanyProfile) -> Role:
@@ -23,13 +23,25 @@ def role(p: CompanyProfile) -> Role:
     return {"built": "provider", "bought": "deployer", "both": "both"}.get(p.built_or_bought, "unknown")
 
 
-def clarify_question(p: CompanyProfile) -> str | None:
-    """The one missing fact that changes the answer most, as a question; None if nothing is missing."""
+def clarify_topic(p: CompanyProfile, asked: list[str] = ()) -> str | None:
+    """The missing fact that changes the answer most ('system', then 'role'), skipping topics already
+    asked this turn: if the user could not answer, asking again only annoys them."""
+    missing = []
     if not p.system_description and not _any_system_fact(p):
-        return "What does your AI system do, and who uses it (your customers, your staff, the public)?"
+        missing.append("system")
     if role(p) == "unknown":
-        what = _short(p.system_description) if p.system_description else "AI system"
-        return (f"Did your company build the {what} itself (including on top of "
+        missing.append("role")
+    return next((t for t in missing if t not in asked), None)
+
+
+def clarify_question(p: CompanyProfile, asked: list[str] = ()) -> str | None:
+    """The clarifying question for `clarify_topic`; None if nothing (new) is missing."""
+    topic = clarify_topic(p, asked)
+    if topic == "system":
+        return "What does your AI system do, and who uses it (your customers, your staff, the public)?"
+    if topic == "role":
+        what = f"AI system ({_short(p.system_description)})" if p.system_description else "AI system"
+        return (f"Did your company build this {what} itself (including on top of "
                 "another company's AI model or API, or sold under your own name), or do you use a "
                 "ready-made product from another company as is? This decides whether you are its "
                 "provider or its deployer, which changes your obligations.")
@@ -87,6 +99,12 @@ def obligations_for_profile(p: CompanyProfile) -> tuple[list[dict], list[str]]:
         if all(o["id"] != oid for o in out):
             out.append({"id": oid, "reason": reason})
 
+    if risk_tier(p) == "prohibited":
+        # a banned practice: the other obligations (high-risk, transparency) would only distract from
+        # the answer, which is "you may not offer/use it" (the writer still sees the Art. 5 exceptions)
+        add("prohibited-practices", "emotion recognition at work or in education is prohibited (Art. 5(1)(f))")
+        add("ai-literacy", "applies to every provider and deployer of an AI system")
+        return out, caveats
     if p.trains_general_purpose_model:
         add("gpai-model-obligations", "you train and release a general-purpose AI model")
     if p.emotion_or_biometric:
@@ -128,6 +146,28 @@ def risk_tier(p: CompanyProfile) -> RiskTier:
     if p.interacts_with_people or p.generates_content or p.publishes_generated_content or p.emotion_or_biometric:
         return "transparency"
     return "unclear" if p.high_risk_area == "unknown" else "minimal"
+
+
+_LAW = "eu-ai-act-consolidated:"
+_PROVIDER_HR = [_LAW + "art_16"]  # obligations of providers of high-risk systems
+_DEPLOYER_HR = [_LAW + f"art_26:{n}" for n in (1, 2, 4, 5, 6, 7)] + [_LAW + "art_27:1"]  # Art. 26 + FRIA
+# The core duties to show the writer for a selected obligation, by role. The table rows only cite the
+# date articles; without this the writer gets whatever search returns (e.g. a provider's quality
+# management system, Art. 17, for a company that only uses a high-risk system).
+CORE_LAW = {
+    "high-risk-annex-iii": {"provider": _PROVIDER_HR, "deployer": _DEPLOYER_HR},
+    "high-risk-annex-i": {"provider": _PROVIDER_HR, "deployer": _DEPLOYER_HR},
+}
+
+
+def core_chunks(obligation_id: str, p: CompanyProfile) -> list[str]:
+    """Chunk ids of the core law for an obligation and the company's role (both roles if unclear)."""
+    by_role = CORE_LAW.get(obligation_id, {})
+    r = role(p)
+    if r in ("provider", "deployer"):
+        return list(by_role.get(r, []))
+    # both / unknown: the provider's list and the first deployer duties, to keep room for search hits
+    return by_role.get("provider", []) + by_role.get("deployer", [])[:4]
 
 
 def obligations_for_refs(named: list[str], retrieved: list[str], limit: int = 4) -> list[dict]:

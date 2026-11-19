@@ -58,7 +58,7 @@ def test_questions_gold_refs_exist():
         pytest.skip("run `python -m aiact.sources` first")
     refs = [c.article_ref for c in build()]
     qs = load_questions()
-    assert len(qs) == 30 and len({q["id"] for q in qs}) == 30
+    assert len(qs) == 35 and len({q["id"] for q in qs}) == 35
     for q in qs:
         for item in q["gold"]:
             for g in item.split("|"):
