@@ -18,6 +18,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import date
 from typing import Annotated, Any
 
@@ -245,16 +246,31 @@ class Conversation:
 
     def send(self, message: str) -> dict[str, Any]:
         t = time.perf_counter()
+        out = self.graph.invoke(self._input(message), self.config)
+        return self._result(out, out.get("__interrupt__", ()), time.perf_counter() - t)
+
+    async def asend(self, message: str,
+                    on_node: Callable[[str, dict | None], Awaitable[None]] | None = None) -> dict[str, Any]:
+        """`send` for the web UI. Awaits `on_node(name, None)` when a node starts and
+        `on_node(name, update)` when it ends (`update`: the state keys the node wrote)."""
+        t = time.perf_counter()
+        async for task in self.graph.astream(self._input(message), self.config, stream_mode="tasks"):
+            if on_node:
+                ended = "result" in task  # a node start event has no "result" key
+                await on_node(task["name"], (task["result"] or {}) if ended else None)
+        snap = await self.graph.aget_state(self.config)
+        return self._result(snap.values, snap.interrupts, time.perf_counter() - t)
+
+    def _input(self, message: str) -> dict | Command:
+        if self.waiting:  # resume the graph paused in ask_clarify
+            return Command(resume=message)
+        return {"messages": [HumanMessage(message)], "today": self.today}
+
+    def _result(self, state: dict, interrupts, seconds: float) -> dict[str, Any]:
+        self.waiting = bool(interrupts)
         if self.waiting:
-            out = self.graph.invoke(Command(resume=message), self.config)
-        else:
-            out = self.graph.invoke({"messages": [HumanMessage(message)], "today": self.today}, self.config)
-        seconds = time.perf_counter() - t
-        if out.get("__interrupt__"):
-            self.waiting = True
-            return {"question": out["__interrupt__"][0].value["question"], "seconds": seconds, "state": out}
-        self.waiting = False
-        return {"output": out["output"], "seconds": seconds, "state": out}
+            return {"question": interrupts[0].value["question"], "seconds": seconds, "state": state}
+        return {"output": state["output"], "seconds": seconds, "state": state}
 
 
 def _role(m: AnyMessage) -> str:

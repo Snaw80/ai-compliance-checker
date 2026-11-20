@@ -14,6 +14,8 @@ uv run python -m aiact.ingest        # parse -> data/corpus/chunks.jsonl -> Post
 uv run pytest
 uv run python -m aiact.search "Do I have to tell users they talk to a chatbot?"
 uv run python -m aiact.eval_retrieval   # -> eval/results/retrieval.md
+ollama pull qwen3.5:9b                  # the agent's model (6.6 GB)
+uv run --directory ui chainlit run app.py   # web UI -> http://localhost:8000
 ```
 
 Check for a newer consolidated AI Act: `uv run python -m aiact.sources --check-consolidated`
@@ -104,3 +106,12 @@ Not in the day-4 cut: parallel per-country research (`Send`), the corrective ret
 
 Read with care: the judge is a 9B model of the same family as the systems. Even when given the current dates, it still sometimes marks the correct post-Omnibus dates (2 Dec 2027 for Annex III) as wrong. Five company cases are too few to generalise from, and several agent fixes were made after looking at failures on this same set, so these scores are optimistic. Spot-check `answers.jsonl`. Known agent weaknesses: the writer sometimes states the Art. 111(2) grace period with its condition reversed; misses details the expected answer lists (q19 deployer duties, q14 reasons from Recital 44); ~1.7x slower than the baseline (a clarifying round costs ~15 s, the writer 40-70 s).
 
+
+## Web UI (day 5)
+
+```bash
+docker compose up -d db                       # Postgres must be up and ingested (see Setup)
+uv run --directory ui chainlit run app.py     # -> http://localhost:8000
+```
+
+A local [Chainlit](https://docs.chainlit.io) chat (`ui/app.py`) over the same agent. Each browser chat is one agent thread, so a clarifying question and its answer stay in the conversation. While the agent works, each graph node shows as a step with what it decided: the route, the company profile (only the facts the user gave), the obligations and countries to cover, and the sources found. The answer is the agent's rendered markdown, with its sources as links. The UI calls `Conversation.asend`, which streams LangGraph's `tasks` events. Answers take about 1-2 minutes on an M4 (the writer is most of it). Local only: no accounts, no persistence across restarts.

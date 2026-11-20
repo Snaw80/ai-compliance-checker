@@ -1,5 +1,6 @@
 """Agent graph + profile rules with a scripted fake model and fake search (no Ollama, no database)."""
 
+import asyncio
 from datetime import date
 
 import pytest
@@ -93,6 +94,29 @@ def test_company_case_asks_build_or_buy_then_resumes(fake):
     # the writer saw the selected obligations with their T tags
     writer_prompt = model.calls[3][1][1][1]
     assert "[T1] art50-chatbot-disclosure" in writer_prompt and "[T2] ai-literacy" in writer_prompt
+
+
+def test_asend_reports_nodes_and_pauses_like_send(fake):
+    """The UI path: same answers as `send`, plus node start/end events with each node's update."""
+    fake(profiles=[CompanyProfile(system_description=CHATBOT, interacts_with_people=True),
+                   CompanyProfile(system_description=CHATBOT, interacts_with_people=True, built_or_bought="built")])
+    c, events = agent_graph.Conversation(TODAY), []
+
+    async def on_node(name, update):
+        events.append((name, update))
+
+    r = asyncio.run(c.asend("We use a chatbot on our website. What do we need to do?", on_node))
+    assert "build this AI system" in r["question"] and c.waiting
+    assert [(n, u is not None) for n, u in events] == [
+        ("router", False), ("router", True), ("build_profile", False), ("build_profile", True),
+        ("ask_clarify", False), ("ask_clarify", True)]  # ended by the interrupt
+    assert events[1][1]["intent"] == "company_case" and events[3][1]["profile"].system_description == CHATBOT
+    events.clear()
+    r = asyncio.run(c.asend("We built it on top of an LLM API.", on_node))
+    assert not c.waiting and "Disclose the chatbot" in r["output"]
+    assert [n for n, u in events if u is not None] == ["ask_clarify", "build_profile", "plan", "research",
+                                                       "generate", "finalize"]
+    assert r["state"]["profile"].built_or_bought == "built"
 
 
 def test_clarify_never_repeats_a_question_and_says_so(fake):
