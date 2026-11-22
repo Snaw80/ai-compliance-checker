@@ -34,7 +34,7 @@ create table if not exists chunks (
   refs           text[] not null default '{}',     -- cross-references: {'Art. 6(2)', 'Annex III'}
   amended_by     text,                             -- e.g. 'Regulation (EU) 2026/1744' when the text comes from an amendment
   url            text not null,                    -- deep link (with anchor when available)
-  embedding      vector(1024),                     -- BGE-M3 dense (filled on day 2)
+  embedding      vector(1024),                     -- BGE-M3 dense (filled by aiact.embed)
   tsv            tsvector generated always as (
                    setweight(to_tsvector('english', coalesce(article_ref, '') || ' ' || coalesce(title, '')), 'A') ||
                    setweight(to_tsvector('english', text), 'B')

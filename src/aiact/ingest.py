@@ -10,11 +10,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
 
+from aiact.db import connect
 from aiact.models import Chunk
 from aiact.parsers.eurlex import parse_consolidated, parse_recitals
 from aiact.parsers.faq import parse_faq
@@ -58,11 +58,8 @@ def write_jsonl(chunks: list[Chunk]) -> None:
 
 
 def load_db(chunks: list[Chunk]) -> None:
-    import psycopg
-
-    url = os.environ.get("DATABASE_URL", "postgresql://aiact:aiact@localhost:5433/aiact")
     used_docs = {c.doc_id for c in chunks}
-    with psycopg.connect(url) as conn, conn.cursor() as cur:
+    with connect() as conn, conn.cursor() as cur:
         # Full refresh of the corpus in one transaction; embeddings are re-filled from the cache.
         cur.execute("delete from documents")
         for doc_id in used_docs:

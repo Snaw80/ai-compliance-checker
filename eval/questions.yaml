@@ -1,10 +1,11 @@
-# Test set v1 (30 questions). Used for retrieval eval (day 2) and answer eval (day 5).
+# Test set (35 questions): 30 general/scope questions + 5 company cases.
+# Used by aiact.eval_retrieval (gold refs) and aiact.eval_answers (expected answer).
 #
 # gold: corpus `article_ref`s that answer the question. A chunk matches a gold ref if it is
 #       that ref or a sub-part of it ('Art. 50(1)' matches 'Art. 50'; 'Annex III point 4'
 #       matches 'Annex III'). "A | B" means either one counts.
 #       Empty gold = nothing in the corpus should answer it (out of scope).
-# answer: the gist a correct answer must contain (for the day 5 answer eval).
+# answer: the gist a correct answer must contain (graded by the answer eval).
 # Gold refs were checked against corpus 2026-11-18 (AI Act consolidated 27 Jul 2026).
 
 - id: q01
@@ -187,7 +188,7 @@
   gold: []
   answer: Out of scope - the assistant only covers the AI Act and should say so.
 
-# --- Company cases (day 4). `clarify`: the user's reply(ies), in order, if the agent asks a
+# --- Company cases. `clarify`: the user's reply(ies), in order, if the agent asks a
 # clarifying question. The baseline never asks; it gets only `question`.
 
 - id: q31

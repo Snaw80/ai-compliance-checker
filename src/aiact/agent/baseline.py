@@ -1,4 +1,4 @@
-"""v0 baseline: plain RAG chain, retrieve -> generate -> finalize. The agent is measured against it.
+"""Baseline: plain RAG chain, retrieve -> generate -> finalize. The agent is measured against it.
 
 Same search, writer prompt, citation check and rendering as the agent, so the difference in the
 eval comes from the graph (routing, company profile, tables, planned research), not from prompts.

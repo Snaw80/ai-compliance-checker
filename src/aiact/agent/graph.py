@@ -1,4 +1,4 @@
-"""The agent: a fixed LangGraph workflow (research/04-agent-graph.md, day-4 cut).
+"""The agent: a fixed LangGraph workflow.
 
     router ─┬─ off_topic ──────────────────────────────────────────────────────▶ finalize
             ├─ general ──────────────────────────▶ plan ─▶ research ─▶ generate ─▶ finalize
@@ -8,9 +8,6 @@
 The model decides only in `router`, `build_profile` (facts the user stated) and `generate`.
 Role, clarifying questions, which obligations and countries to cover, dates, the country
 section and the citation check are code.
-
-Not in the day-4 cut (see research/04): parallel per-country research (Send), the corrective
-retrieval loop, a model check of citations and the revise loop.
 """
 
 from __future__ import annotations

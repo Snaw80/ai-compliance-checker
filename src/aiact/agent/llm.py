@@ -1,6 +1,6 @@
 """Local chat models (Ollama) and structured calls.
 
-Day-4 check of qwen3.5 on Ollama 0.20 (M4, 32 GB):
+Why tool calling (qwen3.5 on Ollama 0.20, M4, 32 GB):
 - JSON-schema `format` (LangChain's default `json_schema` method) is ignored when thinking is off:
   the model answers in prose.
 - Thinking on: minutes per call even for a one-line routing question. Unusable here.
@@ -29,7 +29,7 @@ FAST_MODEL = os.environ.get("AIACT_FAST_MODEL", "qwen3.5:9b")      # router, pro
 WRITER_MODEL = os.environ.get("AIACT_WRITER_MODEL", "qwen3.5:9b")  # final answer
 NUM_CTX = int(os.environ.get("AIACT_NUM_CTX", "16384"))
 # Seconds per call. Writer calls take ~40-70 s; without a timeout a wedged Ollama runner
-# blocks forever (seen in the day-4 eval: one request hung for over an hour).
+# blocks forever (seen in an eval run: one request hung for over an hour).
 TIMEOUT = float(os.environ.get("AIACT_LLM_TIMEOUT", "300"))
 MAX_TOKENS = 2048  # longest real answer is ~1k tokens; caps runaway (repeating) generations
 

@@ -132,12 +132,6 @@ class _BM25:
 _bm25: _BM25 | None = None
 
 
-def reset_keyword_index() -> None:
-    """Call after re-ingesting in the same process."""
-    global _bm25
-    _bm25 = None
-
-
 def _keyword(cur: psycopg.Cursor, query: str, n: int) -> list[str]:
     global _bm25
     if _bm25 is None:

@@ -1,8 +1,7 @@
 """Code-only citation check and the final markdown (no model involved).
 
-The citation check is the day-4 version of `verify_citations`: it checks that every tag the writer
-cites was actually shown to it, and that every date it writes appears in a source. Whether a source
-really *supports* its point (a model check) comes later.
+The citation check makes sure every tag the writer cites was actually shown to it, and that every
+date it writes appears in a source. It does not check that a source really *supports* its point.
 """
 
 from __future__ import annotations

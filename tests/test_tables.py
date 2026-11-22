@@ -196,7 +196,7 @@ def test_profile_is_a_copy():
 
 
 def test_no_country_claims_deep_coverage_without_national_documents():
-    # Layer 3 (national RAG) isn't built yet, so every country is profile_only for now.
+    # No national documents are indexed, so no country may claim deep coverage.
     assert {r["coverage_tier"] for r in load_countries()} == {"profile_only"}
 
 

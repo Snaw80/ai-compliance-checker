@@ -1,117 +1,104 @@
 # AI Act Assistant
 
-Chat assistant that tells small companies which EU AI Act rules apply to them, where and from when, with sources. Fully local, free stack (Ollama + Postgres/pgvector). Background: `ai-act-assistant-description.md` and `research/`.
+A chat assistant that tells small companies **which EU AI Act rules apply to their AI system, in which EU/EEA country, and from when**, citing the article or guideline behind every point. It runs fully locally on a laptop, with free models.
 
-## Setup
+> "We're a startup in Oslo and Helsinki with a chatbot on our website. What do we need to do?"
+> → asks whether they built or bought the chatbot, then answers: probable risk category, the obligations that apply (Art. 50(1) disclosure, AI literacy), the date each one applies, what differs in Finland vs Norway (an EEA country, not bound yet), and numbered sources.
+
+## Why it is built this way
+
+The AI Act is long, recently amended (the 2026 Digital Omnibus moved several deadlines), and its effect depends on the company's **role** (provider or deployer), the **date** and the **country**. A plain RAG chatbot gets exactly those things wrong: it mixes up old and new dates and invents authorities. So the design rule is: **the model writes, code decides.**
+
+- **Dates and countries are tables, not retrieval.** Every article's date of application (Art. 113, plus Art. 111 grace periods) and a profile of all 27 EU + 3 EEA countries (national law, authorities, penalties) live in two hand-checked YAML files, validated strictly at load time. The answer's "when" and "where" sections are rendered from them; the model never writes a date on its own.
+- **A fixed graph, not a free-form agent.** A LangGraph workflow in which the model only (1) routes the message, (2) extracts the facts the user stated, and (3) words the answer. The role, the clarifying question, the obligations, the risk category and the countries are deterministic rules, so they are unit-tested.
+- **Every claim is checked.** The writer cites tagged sources (`[S1]` law passage, `[T1]` table row, `[FI]` country). Code drops tags it never showed the model, flags points without a source, and flags any date that appears in no source.
+- **Measured against a baseline.** Retrieval and answers are evaluated on a 35-question test set, and the agent is compared with a plain RAG chain using the same search and prompt.
+
+## How it works
+
+```
+router ─┬─ off_topic ────────────────────────────────────────────────────▶ finalize
+        ├─ general ─────────────────────────▶ plan ─▶ research ─▶ generate ─▶ finalize
+        └─ company_case ─▶ build_profile ⇄ ask_clarify (pauses for the user)
+                                 └────────────▶ plan
+```
+
+| Step | What happens | Model or code |
+|---|---|---|
+| router | off-topic, general question about the law, or the user's own case | model |
+| build_profile | facts the user stated: what the system does, built or bought, Annex III area, countries... | model |
+| ask_clarify | asks the one missing fact that changes the answer most (each at most once) | code |
+| plan | role, obligations (rows of the applicability table), countries | code |
+| research | hybrid search + the core articles for the role + table rows + country profiles | code |
+| generate | writes the answer from the tagged sources only | model |
+| finalize | citation and date check, renders the dates table, country section and source links | code |
+
+**Search** fuses four rankings with Reciprocal Rank Fusion: dense vectors (BGE-M3, pgvector), BM25 keyword search, the AI Act articles cited by the top guideline/FAQ hits (so the binding text beats commentary about it), and exact matches for articles named in the question.
+
+**Corpus** (as of 18 Nov 2026): the consolidated AI Act including the Omnibus amendments, the original and Omnibus recitals, the Commission's Art. 50 guidelines, and the AI Act Service Desk FAQ. Each is chunked along its legal structure (article paragraph, definition, recital, numbered guideline paragraph, FAQ item).
+
+## Tech choices
+
+| Need | Choice | Why |
+|---|---|---|
+| LLM | qwen3.5 9B via Ollama, thinking off | free and local on a 32 GB laptop; thinking mode took minutes per call |
+| Structured output | tool calling + a small repair layer | Ollama ignored JSON-schema mode for this model; outputs are kept flat because the 9B model garbles nested JSON |
+| Embeddings | BGE-M3 via Ollama | multilingual, runs locally, 1024-dim dense vectors |
+| Store | Postgres 17 + pgvector (Docker) | one database for vectors, full-text search and metadata |
+| Orchestration | LangGraph | explicit graph, interrupts for clarifying questions, per-node streaming for the UI |
+| Knowledge tables | YAML + strict validator | hand-reviewable in a diff, typos fail at load time |
+| UI | Chainlit | chat UI with live steps showing what each node decided |
+
+## Results
+
+Retrieval (29 questions with gold articles, `eval/results/retrieval.md`): hit@5 goes from 0.62 (dense only) to **0.76** with the full hybrid search, hit@10 from 0.76 to **0.83**.
+
+Answers (35 questions incl. 5 company cases with scripted replies, `eval/results/answers.md`), graded by a local judge against the expected answer:
+
+| | score | company cases | cites a gold source | unsupported points | answers with unsourced dates | median time |
+|---|---|---|---|---|---|---|
+| plain RAG baseline | 0.79 | 0.60 | 0.82 | 2% | 1 | 37 s |
+| agent | **0.86** | **0.90** | 0.85 | 0% | 0 | 62 s |
+
+Take these as indicative: the judge is a 9B model from the same family, five company cases is a small sample, and some fixes were made after reading failures on this set.
+
+## Run it
+
+Needs Docker, [Ollama](https://ollama.com) and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 cp .env.example .env
-docker compose up -d db              # Postgres 17 + pgvector on :5433, schema from db/schema.sql
-ollama pull bge-m3                   # embedding model (1.2 GB)
+docker compose up -d db                  # Postgres + pgvector on :5433
+ollama pull bge-m3 && ollama pull qwen3.5:9b
 uv sync
-uv run python -m aiact.sources       # download sources into data/raw (cached)
-uv run python -m aiact.ingest        # parse -> data/corpus/chunks.jsonl -> Postgres -> BGE-M3 embeddings (cached)
+uv run python -m aiact.sources           # download the sources (cached in data/raw)
+uv run python -m aiact.ingest            # parse, load Postgres, embed
 uv run pytest
-uv run python -m aiact.search "Do I have to tell users they talk to a chatbot?"
-uv run python -m aiact.eval_retrieval   # -> eval/results/retrieval.md
-ollama pull qwen3.5:9b                  # the agent's model (6.6 GB)
-uv run --directory ui chainlit run app.py   # web UI -> http://localhost:8000
+
+uv run --directory ui chainlit run app.py            # web UI on http://localhost:8000
+uv run python -m aiact.agent                         # or chat in the terminal (-v shows decisions)
+uv run python -m aiact.eval_retrieval                # retrieval eval
+uv run python -m aiact.eval_answers                  # baseline vs agent (slow: ~1 min per answer)
 ```
 
-Check for a newer consolidated AI Act: `uv run python -m aiact.sources --check-consolidated`
+An answer takes about 1 minute on an Apple M4. Set `AIACT_WRITER_MODEL` to try a larger writer model.
 
-## Corpus (version 2026-11-18)
-
-| doc_id | Source | Chunking |
-|---|---|---|
-| `eu-ai-act-consolidated` | AI Act consolidated 27 Jul 2026 (CELEX 02024R1689-20260727) | article paragraph; Art. 3 one per definition; long paragraphs per point; annexes per section/point. `amended_by` set for text from the Omnibus |
-| `eu-ai-act-recitals` | AI Act original recitals (1–180) | one per recital |
-| `eu-digital-omnibus-ai` | Omnibus Reg. 2026/1744 recitals (1–47) | one per recital |
-| `eu-guidelines-art50` | Commission Art. 50 guidelines, C(2026) 7702, 5 Nov 2026 | one per numbered paragraph |
-| `eu-service-desk-faq` | AI Act Service Desk FAQ | one per Q&A (outdated "Digital Omnibus" proposal items excluded) |
-
-EUR-Lex blocks scripts, so EU law comes from the Publications Office Cellar API (same text).
-
-## Search (day 2)
-
-`aiact.search.search(query, k)` fuses four rankings with Reciprocal Rank Fusion:
-
-1. **dense**: BGE-M3 (Ollama) over `context + text`, pgvector cosine
-2. **keyword**: BM25 over the Postgres English tsvectors (`ts_rank` has no IDF, so "AI" swamped every query)
-3. **cited law** (weight 2): AI Act chunks cited by the top guideline/FAQ/recital hits. Without it, Art. 50 guideline paragraphs push Art. 50 itself out of the top 10
-4. **exact refs** (weight 2): articles/annexes/recitals named in the query; the best chunk of each is pinned first
-
-Test set: `eval/questions.yaml` (30 questions, gold `article_ref`s, expected answer gist). Results in `eval/results/retrieval.md`: hit@5 0.62 (dense only) → 0.76, hit@10 0.76 → 0.83. No reranker yet.
-
-## Dates and countries (day 3)
-
-Dates and per-country facts are **not** retrieved and **not** left to the LLM. They live in two hand-checked YAML tables, read through `aiact.tables` (the agent's future tools):
-
-| File | Function | Content |
-|---|---|---|
-| `tables/applicability.yaml` | `lookup_applicability(obligation_id \| article=, country=, on=)` | 20 rows covering every AI Act article, dates from Art. 113 + transitional rules from Art. 111 (consolidated 27 Jul 2026, Omnibus included). Each row cites its corpus `source_chunk_ids` (tested) |
-| `tables/countries.yaml` | `get_country_profile("Finland" \| "FI")` | 27 EU + 3 EEA countries: national law status, single point of contact, market surveillance and notifying authorities, penalties, sandbox, sources, `last_verified`, `confidence`, `open_questions` |
-
-```bash
-uv run python -m aiact.tables "Art. 50(2)" --country FI     # applicability, JSON
-uv run python -m aiact.tables --country Germany              # country profile, JSON
-```
-
-The loader validates strictly (enums, dates, unknown keys), so a YAML typo fails at load time instead of reaching an answer. Country rows were seeded on 2026-11-19 from aiactguide.net (Oct/Nov 2026) and FLI (Jun 2026). No row is `confidence: high` until someone checks it against the official gazette.
-
-## Agent (day 4)
-
-```bash
-ollama pull qwen3.5:9b
-uv run python -m aiact.agent                 # chat in the terminal (multi-turn, asks clarifying questions)
-uv run python -m aiact.agent -v "We use a chatbot on our website. What do we need to do?"
-uv run python -m aiact.agent --baseline "..."   # v0 plain RAG chain, for comparison
-uv run python -m aiact.eval_answers             # baseline vs agent -> eval/results/answers.md
-```
-
-A fixed LangGraph workflow (`aiact.agent.graph`), the day-4 cut of `research/04-agent-graph.md`:
+## Layout
 
 ```
-router ─┬─ off_topic ──────────────────────────────────────────────────────▶ finalize
-        ├─ general ──────────────────────────▶ plan ─▶ research ─▶ generate ─▶ finalize
-        └─ company_case ─▶ build_profile ⇄ ask_clarify (interrupt)
-                                 └─────────────▶ plan
+src/aiact/
+  sources.py, parsers/, ingest.py   download and chunk the corpus
+  embed.py, search.py               embeddings and hybrid search
+  tables.py                         applicability + country tables (tables/*.yaml)
+  agent/                            graph, rules, evidence, prompts, citation check, rendering
+  eval_retrieval.py, eval_answers.py
+eval/        test questions and results
+ui/          Chainlit app
+tests/       unit tests (agent tests use a scripted fake model, no Ollama needed)
 ```
 
-The model decides only three things: the route, the **facts the user stated** (`CompanyProfile`, including whether they *built* or *bought* the system), and the wording of the answer. Everything else is code (`aiact.agent.rules`) and unit-tested:
+## Limits
 
-| Decision | How |
-|---|---|
-| Provider or deployer | `built` → provider, `bought` → deployer; unknown → ask once, then cover both and say so |
-| Clarifying question | the missing fact that changes the answer most (what the system does, then built/bought); each asked at most once per turn |
-| Which obligations | profile facts → rows of `tables/applicability.yaml` (company cases; a prohibited practice → only the ban); articles named or retrieved → rows (general questions) |
-| Which law the writer sees | the core duties for the role (e.g. Art. 26-27 for a deployer of a high-risk system, Art. 16 for its provider), then search hits |
-| Risk category | from the profile facts, shown as *probable* |
-| Countries | where the company and its users are (or countries named in the question), EU/EEA only, max 5 |
-| Dates, country details | rendered from the tables, never written by the model (general questions: only the rows the answer cites) |
-| Citations | the writer cites tags (`[S1]` chunk, `[T1]` table row, `[FI]` country); code drops tags it never saw, counts unsourced points and flags dates that appear in no source |
-
-Models: qwen3.5 9B through Ollama, thinking **off** (on, a one-line routing call takes minutes). Structured output goes through **tool calling**: Ollama 0.20 ignores the JSON-schema `format` for qwen3.5 when thinking is off. qwen sometimes sends nested JSON as a (broken) string, nests a list item too deep, sends `null` for a list or a value outside an enum, so answers are kept flat and `llm.structured` repairs what it can (invalid optional fields fall back to their default). Each call has a 300 s timeout and a 2,048-token cap: without them, one stuck Ollama request froze an eval run for over an hour. Set `AIACT_WRITER_MODEL=qwen3.5:27b-mlx` to try the larger writer.
-
-Not in the day-4 cut: parallel per-country research (`Send`), the corrective retrieval loop, a model check of citations, the revise loop, a Postgres checkpointer (in-memory for now).
-
-### Answer eval (`eval/results/answers.md`)
-
-35 questions (30 general/scope + 5 company cases with scripted replies to the clarifying questions), answers as of 19 Nov 2026, graded by a local qwen3.5 9B judge against the expected gist (correct 1, partial 0.5, wrong 0):
-
-| | score | general (29) | company cases (5) | cites a gold source | unsupported points | answers with unsourced dates | median s |
-|---|---|---|---|---|---|---|---|
-| baseline (v0 RAG chain) | 0.79 | 0.81 | 0.60 | 0.82 | 0.02 | 1 | 37 |
-| agent (day 4) | 0.86 | 0.84 | 0.90 | 0.85 | 0.00 | 0 | 62 |
-
-Read with care: the judge is a 9B model of the same family as the systems. Even when given the current dates, it still sometimes marks the correct post-Omnibus dates (2 Dec 2027 for Annex III) as wrong. Five company cases are too few to generalise from, and several agent fixes were made after looking at failures on this same set, so these scores are optimistic. Spot-check `answers.jsonl`. Known agent weaknesses: the writer sometimes states the Art. 111(2) grace period with its condition reversed; misses details the expected answer lists (q19 deployer duties, q14 reasons from Recital 44); ~1.7x slower than the baseline (a clarifying round costs ~15 s, the writer 40-70 s).
-
-
-## Web UI (day 5)
-
-```bash
-docker compose up -d db                       # Postgres must be up and ingested (see Setup)
-uv run --directory ui chainlit run app.py     # -> http://localhost:8000
-```
-
-A local [Chainlit](https://docs.chainlit.io) chat (`ui/app.py`) over the same agent. Each browser chat is one agent thread, so a clarifying question and its answer stay in the conversation. While the agent works, each graph node shows as a step with what it decided: the route, the company profile (only the facts the user gave), the obligations and countries to cover, and the sources found. The answer is the agent's rendered markdown, with its sources as links. The UI calls `Conversation.asend`, which streams LangGraph's `tasks` events. Answers take about 1-2 minutes on an M4 (the writer is most of it). Local only: no accounts, no persistence across restarts.
+- General information, not legal advice. English only.
+- Country profiles were seeded from public trackers (Nov 2026) and are marked medium/low confidence until checked against official gazettes. No national law texts are indexed.
+- The citation check verifies that sources exist and dates match, not that each source fully supports its point.

@@ -7,7 +7,7 @@
 # Seeded 2026-11-19 from two trackers, newest wins on conflicts:
 #   - aiactguide.net (statuses as of 24 Oct 2026; Germany/Spain pages Nov/Oct 2026)
 #   - FLI national implementation plans (17 Jun 2026)
-# plus the AI Act Service Desk national-resources directory and research/05-country-coverage.md.
+# plus the AI Act Service Desk national-resources directory and the author's web research (18 Nov 2026).
 # The Commission's Art. 70(2) single-point-of-contact list could not be fetched (not linked from
 # the Service Desk Art. 70 page).
 #
@@ -30,7 +30,7 @@ sources:
   aiactguide: {title: "aiactguide.net: AI Act national authorities", url: "https://aiactguide.net/authorities/", as_of: 2026-11-11}
   fli: {title: "FLI: national implementation plans", url: "https://artificialintelligenceact.eu/national-implementation-plans/", as_of: 2026-06-17}
   service_desk: {title: "AI Act Service Desk: national resources", url: "https://ai-act-service-desk.ec.europa.eu/en/national-resources", as_of: 2026-11-19}
-  research: {title: "Project research notes (research/00-overview.md, 05-country-coverage.md)", url: "research/05-country-coverage.md", as_of: 2026-11-18}
+  research: {title: "Author's web research (national news and law-firm notes, not published)", url: "", as_of: 2026-11-18}
 
 countries:
 

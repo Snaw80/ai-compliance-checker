@@ -2,8 +2,8 @@
 
 - Date: 2026-11-19 · answers as of 2026-11-19 · 35 questions (`eval/questions.yaml`)
 - Writer `qwen3.5:9b`, fast model `qwen3.5:9b`, judge `qwen3.5:9b` (Ollama, thinking off)
-- **baseline** (v0): hybrid search top-8 → writer → code citation check. Same prompt and rendering as the agent.
-- **agent** (day 4): router → company profile ⇄ clarifying question → plan (code: obligations, countries)
+- **baseline**: hybrid search top-8 → writer → code citation check. Same prompt and rendering as the agent.
+- **agent**: router → company profile ⇄ clarifying question → plan (code: obligations, countries)
   → research (law of the selected obligations + search + applicability table + country profiles) → writer → code check
 - Raw answers: `eval/results/answers.jsonl`. Score: judge vs expected gist (correct 1, partial 0.5, wrong 0).
   The judge is a 9B local model of the same family: indicative, spot-check the raw answers.

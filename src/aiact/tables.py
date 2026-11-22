@@ -1,7 +1,7 @@
 """Deterministic knowledge tables: applicability dates and country profiles.
 
 Dates and countries are NOT retrieved by search and NOT inferred by the LLM. The agent reads
-them from two hand-checked YAML files through these two functions (its future tools):
+them from two hand-checked YAML files through these two functions:
 
     lookup_applicability(obligation_id | article=..., country="EU", on=date)
     get_country_profile("Finland" | "FI")

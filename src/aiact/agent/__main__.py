@@ -18,7 +18,7 @@ from aiact.agent.graph import Conversation
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("question", nargs="?", help="omit to chat")
-    ap.add_argument("--baseline", action="store_true", help="plain RAG chain (v0)")
+    ap.add_argument("--baseline", action="store_true", help="plain RAG chain baseline")
     ap.add_argument("--today", type=date.fromisoformat, help="answer as of this date (YYYY-MM-DD)")
     ap.add_argument("-v", "--verbose", action="store_true", help="log decisions and timings")
     a = ap.parse_args()

@@ -1,4 +1,4 @@
-"""Answer eval: v0 baseline (plain RAG chain) vs the agent graph, on eval/questions.yaml.
+"""Answer eval: baseline (plain RAG chain) vs the agent graph, on eval/questions.yaml.
 
     uv run python -m aiact.eval_answers                  # both systems; resumes from eval/results/answers.jsonl
     uv run python -m aiact.eval_answers --only q31 q35   # a subset
@@ -190,8 +190,8 @@ def report(cache: dict[tuple[str, str], dict], questions: list[dict], judge_mode
 
 - Date: {date.today()} · answers as of {TODAY} · {len(questions)} questions (`eval/questions.yaml`)
 - Writer `{llm.WRITER_MODEL}`, fast model `{llm.FAST_MODEL}`, judge `{judge_model}` (Ollama, thinking off)
-- **baseline** (v0): hybrid search top-8 → writer → code citation check. Same prompt and rendering as the agent.
-- **agent** (day 4): router → company profile ⇄ clarifying question → plan (code: obligations, countries)
+- **baseline**: hybrid search top-8 → writer → code citation check. Same prompt and rendering as the agent.
+- **agent**: router → company profile ⇄ clarifying question → plan (code: obligations, countries)
   → research (law of the selected obligations + search + applicability table + country profiles) → writer → code check
 - Raw answers: `eval/results/answers.jsonl`. Score: judge vs expected gist (correct 1, partial 0.5, wrong 0).
   The judge is a 9B local model of the same family: indicative, spot-check the raw answers.
