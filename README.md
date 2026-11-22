@@ -102,3 +102,7 @@ tests/       unit tests (agent tests use a scripted fake model, no Ollama needed
 - General information, not legal advice. English only.
 - Country profiles were seeded from public trackers (Nov 2026) and are marked medium/low confidence until checked against official gazettes. No national law texts are indexed.
 - The citation check verifies that sources exist and dates match, not that each source fully supports its point.
+
+## License
+
+MIT, see `LICENSE`. The AI Act texts and Commission documents downloaded by `aiact.sources` are not part of this repository and remain under their own terms.

@@ -3,6 +3,7 @@ name = "aiact"
 version = "0.1.0"
 description = "AI Act assistant: RAG over the EU AI Act + national rules, fully local models"
 requires-python = ">=3.12"
+license = "MIT"
 dependencies = [
     "beautifulsoup4>=4.12",
     "lxml>=5.0",
