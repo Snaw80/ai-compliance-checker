@@ -2,8 +2,9 @@
 
 A chat assistant that tells small companies **which EU AI Act rules apply to their AI system, in which EU/EEA country, and from when**, citing the article or guideline behind every point. It runs fully locally on a laptop, with free models.
 
-> "We're a startup in Oslo and Helsinki with a chatbot on our website. What do we need to do?"
-> → asks whether they built or bought the chatbot, then answers: probable risk category, the obligations that apply (Art. 50(1) disclosure, AI literacy), the date each one applies, what differs in Finland vs Norway (an EEA country, not bound yet), and numbered sources.
+![Demo: a startup with a chatbot in Oslo and Helsinki asks what it must do; the assistant asks whether they built or bought it, then answers with the obligations, their dates, Norway vs Finland specifics and numbered sources](docs/demo.gif)
+
+*Real run on an M4 laptop, waiting time shortened.*
 
 ## Why it is built this way
 
